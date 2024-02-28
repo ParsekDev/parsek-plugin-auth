@@ -24,7 +24,8 @@ class ParsekEventHandler : ParsekEventListener {
                 ConfigMigration3to4(),
                 ConfigMigration4to5(),
                 ConfigMigration5to6()
-            )
+            ),
+            listOf("auth")
         )
 
         logger.info("Initialized plugin config")
