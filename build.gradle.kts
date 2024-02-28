@@ -32,11 +32,11 @@ dependencies {
         compileOnly(project(mapOf("path" to ":plugins:parsek-plugin-i18n")))
     } else {
         compileOnly("com.github.StatuParsek:Parsek:main-SNAPSHOT")
-        compileOnly("com.github.StatuParsek:parsek-plugin-database:main-SNAPSHOT")
-        compileOnly("com.github.StatuParsek:parsek-plugin-token:main-SNAPSHOT")
-        compileOnly("com.github.StatuParsek:parsek-plugin-mail:main-SNAPSHOT")
-        compileOnly("com.github.StatuParsek:parsek-plugin-system-property:main-SNAPSHOT")
-        compileOnly("com.github.StatuParsek:parsek-plugin-i18n:main-SNAPSHOT")
+        compileOnly("com.github.StatuParsek:parsek-plugin-database:v1.0.0")
+        compileOnly("com.github.StatuParsek:parsek-plugin-token:v1.0.0")
+        compileOnly("com.github.StatuParsek:parsek-plugin-mail:v1.0.0")
+        compileOnly("com.github.StatuParsek:parsek-plugin-system-property:v1.0.0")
+        compileOnly("com.github.StatuParsek:parsek-plugin-i18n:v1.0.0")
     }
 
     compileOnly(kotlin("stdlib-jdk8"))
