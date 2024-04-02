@@ -1,10 +1,12 @@
 package co.statu.rule.auth.route.auth
 
+import co.statu.parsek.annotation.Endpoint
 import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.parsek.model.*
 import co.statu.rule.auth.AuthConfig
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.db.dao.UserDao
+import co.statu.rule.auth.db.impl.UserDaoImpl
 import co.statu.rule.auth.error.InvalidCode
 import co.statu.rule.auth.error.InvalidEmail
 import co.statu.rule.auth.error.InvalidSignature
@@ -14,9 +16,9 @@ import co.statu.rule.auth.token.MagicLoginToken
 import co.statu.rule.auth.token.MagicRegisterToken
 import co.statu.rule.auth.token.RegisterToken
 import co.statu.rule.auth.util.SecurityUtil
-import co.statu.rule.database.Dao
 import co.statu.rule.database.DatabaseManager
 import co.statu.rule.token.db.dao.TokenDao
+import co.statu.rule.token.db.impl.TokenDaoImpl
 import co.statu.rule.token.provider.TokenProvider
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.validation.RequestPredicate
@@ -27,12 +29,26 @@ import io.vertx.json.schema.SchemaParser
 import io.vertx.json.schema.common.dsl.Schemas.objectSchema
 import io.vertx.json.schema.common.dsl.Schemas.stringSchema
 
+@Endpoint
 class VerifyMagicLinkAPI(
-    private val authProvider: AuthProvider,
-    private val tokenProvider: TokenProvider,
-    private val pluginConfigManager: PluginConfigManager<AuthConfig>,
-    private val databaseManager: DatabaseManager
+    private val authPlugin: AuthPlugin
 ) : Api() {
+    private val pluginConfigManager by lazy {
+        authPlugin.pluginBeanContext.getBean(PluginConfigManager::class.java) as PluginConfigManager<AuthConfig>
+    }
+
+    private val databaseManager by lazy {
+        authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
+    }
+
+    private val tokenProvider by lazy {
+        authPlugin.pluginBeanContext.getBean(TokenProvider::class.java)
+    }
+
+    private val authProvider by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
+    }
+
     override val paths = listOf(Path("/auth/magic-link/verify", RouteType.POST))
 
     override fun getValidationHandler(schemaParser: SchemaParser): ValidationHandler =
@@ -49,25 +65,15 @@ class VerifyMagicLinkAPI(
             .predicate(RequestPredicate.BODY_REQUIRED)
             .build()
 
-    private val tokenDao by lazy {
-        Dao.get<TokenDao>(AuthPlugin.externalTables)
-    }
+    private val tokenDao: TokenDao = TokenDaoImpl()
 
-    private val userDao by lazy {
-        Dao.get<UserDao>(AuthPlugin.tables)
-    }
+    private val userDao: UserDao = UserDaoImpl()
 
-    private val magicRegisterToken by lazy {
-        MagicRegisterToken()
-    }
+    private val magicRegisterToken = MagicRegisterToken()
 
-    private val registerTokenObject by lazy {
-        RegisterToken()
-    }
+    private val registerTokenObject = RegisterToken()
 
-    private val magicLoginToken by lazy {
-        MagicLoginToken()
-    }
+    private val magicLoginToken = MagicLoginToken()
 
     override suspend fun handle(context: RoutingContext): Result {
         val parameters = getParameters(context)

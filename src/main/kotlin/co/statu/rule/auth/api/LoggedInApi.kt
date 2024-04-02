@@ -1,18 +1,15 @@
 package co.statu.rule.auth.api
 
 import co.statu.parsek.model.Api
-import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.AuthPlugin.Companion.authProvider
 import co.statu.rule.auth.AuthPlugin.Companion.databaseManager
 import co.statu.rule.auth.db.dao.UserDao
+import co.statu.rule.auth.db.impl.UserDaoImpl
 import co.statu.rule.auth.error.NotLoggedIn
-import co.statu.rule.database.Dao.Companion.get
 import io.vertx.ext.web.RoutingContext
 
 abstract class LoggedInApi : Api() {
-    val userDao by lazy {
-        get<UserDao>(AuthPlugin.tables)
-    }
+    val userDao: UserDao = UserDaoImpl()
 
     private suspend fun checkLoggedIn(context: RoutingContext) {
         val isLoggedIn = authProvider.isLoggedIn(context)

@@ -2,12 +2,11 @@ package co.statu.rule.auth.mail
 
 import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.rule.auth.AuthConfig
-import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.db.dao.UserDao
+import co.statu.rule.auth.db.impl.UserDaoImpl
 import co.statu.rule.auth.token.ConfirmDeleteAccountToken
 import co.statu.rule.auth.util.OneTimeCodeGenerator
 import co.statu.rule.auth.util.SecurityUtil
-import co.statu.rule.database.Dao
 import co.statu.rule.database.DatabaseManager
 import co.statu.rule.mail.Mail
 import co.statu.rule.token.provider.TokenProvider
@@ -19,13 +18,9 @@ class ConfirmDeleteAccountMail(private val pluginConfigManager: PluginConfigMana
     override val templatePath = "confirm-delete-account.hbs"
     override val subject = "Hesap Silinme Onayı - ${getBrandName()}"
 
-    private val confirmDeleteAccountToken by lazy {
-        ConfirmDeleteAccountToken()
-    }
+    private val confirmDeleteAccountToken = ConfirmDeleteAccountToken()
 
-    private val userDao by lazy {
-        Dao.get<UserDao>(AuthPlugin.tables)
-    }
+    private val userDao: UserDao = UserDaoImpl()
 
     override suspend fun parameterGenerator(
         email: String,

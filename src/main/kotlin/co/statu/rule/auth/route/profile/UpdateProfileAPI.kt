@@ -1,6 +1,7 @@
 package co.statu.rule.auth.route.profile
 
 import co.statu.parsek.model.*
+import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.api.LoggedInApi
 import co.statu.rule.auth.error.*
 import co.statu.rule.auth.provider.AuthProvider
@@ -17,11 +18,21 @@ import io.vertx.json.schema.common.dsl.Schemas.stringSchema
 import org.apache.commons.validator.routines.EmailValidator
 
 class UpdateProfileAPI(
-    private val authProvider: AuthProvider,
-    private val databaseManager: DatabaseManager,
-    private val i18nSystem: I18nSystem
+    private val authPlugin: AuthPlugin
 ) : LoggedInApi() {
     override val paths = listOf(Path("/profile", RouteType.PUT))
+
+    private val databaseManager by lazy {
+        authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
+    }
+
+    private val i18nSystem by lazy {
+        authPlugin.pluginBeanContext.getBean(I18nSystem::class.java)
+    }
+
+    private val authProvider by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
+    }
 
     override fun getValidationHandler(schemaParser: SchemaParser): ValidationHandler =
         ValidationHandlerBuilder.create(schemaParser)

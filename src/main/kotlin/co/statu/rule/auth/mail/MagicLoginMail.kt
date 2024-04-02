@@ -2,12 +2,11 @@ package co.statu.rule.auth.mail
 
 import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.rule.auth.AuthConfig
-import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.db.dao.UserDao
+import co.statu.rule.auth.db.impl.UserDaoImpl
 import co.statu.rule.auth.token.MagicLoginToken
 import co.statu.rule.auth.util.OneTimeCodeGenerator
 import co.statu.rule.auth.util.SecurityUtil
-import co.statu.rule.database.Dao
 import co.statu.rule.database.DatabaseManager
 import co.statu.rule.mail.Mail
 import co.statu.rule.token.provider.TokenProvider
@@ -19,13 +18,9 @@ class MagicLoginMail(private val pluginConfigManager: PluginConfigManager<AuthCo
     override val templatePath = "magic-link.hbs"
     override val subject = "Hesabına Giriş Yap - ${getBrandName()}"
 
-    private val magicLoginToken by lazy {
-        MagicLoginToken()
-    }
+    private val magicLoginToken = MagicLoginToken()
 
-    private val userDao by lazy {
-        Dao.get<UserDao>(AuthPlugin.tables)
-    }
+    private val userDao: UserDao = UserDaoImpl()
 
     override suspend fun parameterGenerator(
         email: String,

@@ -2,33 +2,27 @@ package co.statu.rule.auth
 
 import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.rule.auth.db.dao.InvitationCodeDao
+import co.statu.rule.auth.db.impl.InvitationCodeDaoImpl
 import co.statu.rule.auth.db.model.InvitationCode
 import co.statu.rule.auth.error.InvalidInviteCode
-import co.statu.rule.database.Dao.Companion.get
 import co.statu.rule.database.DatabaseManager
 import org.slf4j.Logger
+import org.springframework.beans.factory.config.ConfigurableBeanFactory
+import org.springframework.context.annotation.Scope
+import org.springframework.stereotype.Component
 
-class InvitationCodeSystem private constructor(
-    private val pluginConfigManager: PluginConfigManager<AuthConfig>,
-    private val databaseManager: DatabaseManager,
-    private val logger: Logger
+@Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
+class InvitationCodeSystem(
+    private val authPlugin: AuthPlugin,
+    private val logger: Logger,
 ) {
-    companion object {
-        internal suspend fun create(
-            pluginConfigManager: PluginConfigManager<AuthConfig>,
-            databaseManager: DatabaseManager,
-            logger: Logger
-        ): InvitationCodeSystem {
-            val invitationCodeSystem = InvitationCodeSystem(
-                pluginConfigManager,
-                databaseManager,
-                logger
-            )
+    private val pluginConfigManager by lazy {
+        authPlugin.pluginBeanContext.getBean(PluginConfigManager::class.java) as PluginConfigManager<AuthConfig>
+    }
 
-            invitationCodeSystem.start()
-
-            return invitationCodeSystem
-        }
+    private val databaseManager by lazy {
+        authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
     }
 
     private val jdbcPool by lazy {
@@ -43,11 +37,9 @@ class InvitationCodeSystem private constructor(
         config.invitationConfig
     }
 
-    private val invitationCodeDao by lazy {
-        get<InvitationCodeDao>(AuthPlugin.tables)
-    }
+    private val invitationCodeDao: InvitationCodeDao = InvitationCodeDaoImpl()
 
-    private suspend fun start() {
+    internal suspend fun start() {
         if (!invitationConfig.enabled) {
             return
         }

@@ -1,13 +1,15 @@
 package co.statu.rule.auth.event
 
+import co.statu.parsek.api.annotation.EventListener
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.database.DatabaseManager
 import co.statu.rule.database.event.DatabaseEventListener
 
-class DatabaseEventHandler : DatabaseEventListener {
+@EventListener
+class DatabaseEventHandler(private val authPlugin: AuthPlugin) : DatabaseEventListener {
     override suspend fun onReady(databaseManager: DatabaseManager) {
-        databaseManager.migrateNewPluginId("auth", AuthPlugin.INSTANCE.context.pluginId, AuthPlugin.INSTANCE)
-        databaseManager.initialize(AuthPlugin.INSTANCE, AuthPlugin.tables, AuthPlugin.migrations)
+        databaseManager.migrateNewPluginId("auth", authPlugin.pluginId, authPlugin)
+        databaseManager.initialize(authPlugin, authPlugin)
 
         AuthPlugin.databaseManager = databaseManager
     }

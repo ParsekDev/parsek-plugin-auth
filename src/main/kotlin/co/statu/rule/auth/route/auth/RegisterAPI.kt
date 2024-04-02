@@ -1,14 +1,13 @@
 package co.statu.rule.auth.route.auth
 
-import co.statu.parsek.api.config.PluginConfigManager
+import co.statu.parsek.annotation.Endpoint
 import co.statu.parsek.model.*
-import co.statu.rule.auth.AuthConfig
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.db.dao.UserDao
+import co.statu.rule.auth.db.impl.UserDaoImpl
 import co.statu.rule.auth.error.InvalidToken
 import co.statu.rule.auth.provider.AuthProvider
 import co.statu.rule.auth.token.RegisterToken
-import co.statu.rule.database.Dao.Companion.get
 import co.statu.rule.database.DatabaseManager
 import co.statu.rule.token.provider.TokenProvider
 import io.vertx.ext.web.RoutingContext
@@ -19,13 +18,24 @@ import io.vertx.ext.web.validation.builder.ValidationHandlerBuilder
 import io.vertx.json.schema.SchemaParser
 import io.vertx.json.schema.common.dsl.Schemas.objectSchema
 import io.vertx.json.schema.common.dsl.Schemas.stringSchema
+import kotlin.collections.set
 
+@Endpoint
 class RegisterAPI(
-    private val authProvider: AuthProvider,
-    private val tokenProvider: TokenProvider,
-    private val databaseManager: DatabaseManager,
-    private val pluginConfigManager: PluginConfigManager<AuthConfig>
+    private val authPlugin: AuthPlugin
 ) : Api() {
+    private val databaseManager by lazy {
+        authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
+    }
+
+    private val tokenProvider by lazy {
+        authPlugin.pluginBeanContext.getBean(TokenProvider::class.java)
+    }
+
+    private val authProvider by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
+    }
+
     override val paths = listOf(Path("/auth/register", RouteType.POST))
 
     override fun getValidationHandler(schemaParser: SchemaParser): ValidationHandler =
@@ -43,13 +53,9 @@ class RegisterAPI(
             .predicate(RequestPredicate.BODY_REQUIRED)
             .build()
 
-    private val registerTokenObject by lazy {
-        RegisterToken()
-    }
+    private val registerTokenObject = RegisterToken()
 
-    private val userDao by lazy {
-        get<UserDao>(AuthPlugin.tables)
-    }
+    private val userDao: UserDao = UserDaoImpl()
 
     override suspend fun handle(context: RoutingContext): Result {
         val parameters = getParameters(context)

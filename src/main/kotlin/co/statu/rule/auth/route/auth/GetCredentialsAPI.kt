@@ -1,19 +1,29 @@
 package co.statu.rule.auth.route.auth
 
+import co.statu.parsek.annotation.Endpoint
 import co.statu.parsek.model.Path
 import co.statu.parsek.model.Result
 import co.statu.parsek.model.RouteType
 import co.statu.parsek.model.Successful
+import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.api.LoggedInApi
 import co.statu.rule.auth.provider.AuthProvider
 import co.statu.rule.database.DatabaseManager
 import io.vertx.ext.web.RoutingContext
 import io.vertx.json.schema.SchemaParser
 
+@Endpoint
 class GetCredentialsAPI(
-    private val authProvider: AuthProvider,
-    private val databaseManager: DatabaseManager
+    private val authPlugin: AuthPlugin
 ) : LoggedInApi() {
+    private val authProvider by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
+    }
+
+    private val databaseManager by lazy {
+        authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
+    }
+
     override val paths = listOf(Path("/auth/credentials", RouteType.GET))
 
     override fun getValidationHandler(schemaParser: SchemaParser) = null

@@ -5,6 +5,7 @@ import co.statu.parsek.model.Path
 import co.statu.parsek.model.Result
 import co.statu.parsek.model.RouteType
 import co.statu.parsek.model.Successful
+import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.api.LoggedInApi
 import co.statu.rule.auth.event.AuthEventListener
 import co.statu.rule.auth.provider.AuthProvider
@@ -13,10 +14,17 @@ import io.vertx.ext.web.RoutingContext
 import io.vertx.json.schema.SchemaParser
 
 class GetProfileAPI(
-    private val authProvider: AuthProvider,
-    private val databaseManager: DatabaseManager,
-    private val pluginEventManager: PluginEventManager
+    private val authPlugin: AuthPlugin
 ) : LoggedInApi() {
+
+    private val databaseManager by lazy {
+        authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
+    }
+
+    private val authProvider by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
+    }
+
     override val paths = listOf(Path("/profile", RouteType.GET))
 
     override fun getValidationHandler(schemaParser: SchemaParser) = null
@@ -35,7 +43,7 @@ class GetProfileAPI(
         response["email"] = user.email
         response["lang"] = user.lang
 
-        val authEventHandlers = pluginEventManager.getEventHandlers<AuthEventListener>()
+        val authEventHandlers = PluginEventManager.getEventListeners<AuthEventListener>()
 
         authEventHandlers.forEach { it.onGetProfile(user, response) }
 

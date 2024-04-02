@@ -1,20 +1,22 @@
 package co.statu.rule.auth.route.account
 
+import co.statu.parsek.annotation.Endpoint
 import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.parsek.model.*
 import co.statu.rule.auth.AuthConfig
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.db.dao.UserDao
+import co.statu.rule.auth.db.impl.UserDaoImpl
 import co.statu.rule.auth.error.*
 import co.statu.rule.auth.mail.ConfirmDeleteAccountMail
 import co.statu.rule.auth.mail.DeletedAccountMail
 import co.statu.rule.auth.provider.AuthProvider
 import co.statu.rule.auth.token.ConfirmDeleteAccountToken
 import co.statu.rule.auth.util.SecurityUtil
-import co.statu.rule.database.Dao
 import co.statu.rule.database.DatabaseManager
 import co.statu.rule.mail.MailManager
 import co.statu.rule.token.db.dao.TokenDao
+import co.statu.rule.token.db.impl.TokenDaoImpl
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.validation.ValidationHandler
 import io.vertx.ext.web.validation.builder.Parameters.optionalParam
@@ -23,12 +25,26 @@ import io.vertx.json.schema.SchemaParser
 import io.vertx.json.schema.common.dsl.Schemas.stringSchema
 import java.util.*
 
+@Endpoint
 class DeleteAccountAPI(
-    private val mailManager: MailManager,
-    private val pluginConfigManager: PluginConfigManager<AuthConfig>,
-    private val authProvider: AuthProvider,
-    private val databaseManager: DatabaseManager
+    private val authPlugin: AuthPlugin
 ) : Api() {
+    private val pluginConfigManager by lazy {
+        authPlugin.pluginBeanContext.getBean(PluginConfigManager::class.java) as PluginConfigManager<AuthConfig>
+    }
+
+    private val databaseManager by lazy {
+        authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
+    }
+
+    private val mailManager by lazy {
+        authPlugin.pluginBeanContext.getBean(MailManager::class.java)
+    }
+
+    private val authProvider by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
+    }
+
     override val paths = listOf(Path("/account", RouteType.DELETE))
 
     override fun getValidationHandler(schemaParser: SchemaParser): ValidationHandler =
@@ -39,17 +55,11 @@ class DeleteAccountAPI(
             .queryParameter(optionalParam("signature", stringSchema()))
             .build()
 
-    private val userDao by lazy {
-        Dao.get<UserDao>(AuthPlugin.tables)
-    }
+    private val userDao: UserDao = UserDaoImpl()
 
-    private val tokenDao by lazy {
-        Dao.get<TokenDao>(AuthPlugin.externalTables)
-    }
+    private val tokenDao: TokenDao = TokenDaoImpl()
 
-    private val confirmDeleteAccountToken by lazy {
-        ConfirmDeleteAccountToken()
-    }
+    private val confirmDeleteAccountToken = ConfirmDeleteAccountToken()
 
     private val jdbcPool by lazy {
         databaseManager.getConnectionPool()

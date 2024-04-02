@@ -2,6 +2,9 @@ package co.statu.rule.auth
 
 import co.statu.parsek.api.config.PluginConfigManager
 import io.vertx.core.json.JsonObject
+import org.springframework.beans.factory.config.ConfigurableBeanFactory
+import org.springframework.context.annotation.Scope
+import org.springframework.stereotype.Component
 import java.io.BufferedReader
 import java.io.DataOutputStream
 import java.io.InputStreamReader
@@ -11,13 +14,15 @@ import javax.net.ssl.HttpsURLConnection
 /**
  * Recaptcha V3
  */
-class GoogleRecaptcha private constructor(private val pluginConfigManager: PluginConfigManager<AuthConfig>) {
+@Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
+class GoogleRecaptcha(private val authPlugin: AuthPlugin) {
+    private val pluginConfigManager by lazy {
+        authPlugin.pluginBeanContext.getBean(PluginConfigManager::class.java) as PluginConfigManager<AuthConfig>
+    }
+
     companion object {
         const val RECAPTCHA_SERVICE_URL = "https://www.google.com/recaptcha/api/siteverify"
-
-        internal fun create(pluginConfigManager: PluginConfigManager<AuthConfig>): GoogleRecaptcha {
-            return GoogleRecaptcha(pluginConfigManager)
-        }
     }
 
     /**

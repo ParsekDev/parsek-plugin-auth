@@ -1,6 +1,7 @@
 package co.statu.rule.auth.provider
 
 import co.statu.parsek.Main
+import co.statu.parsek.PluginEventManager
 import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.parsek.error.NoPermission
 import co.statu.rule.auth.AuthConfig
@@ -9,6 +10,8 @@ import co.statu.rule.auth.GoogleRecaptcha
 import co.statu.rule.auth.PanelPermission
 import co.statu.rule.auth.db.dao.PermissionGroupDao
 import co.statu.rule.auth.db.dao.UserDao
+import co.statu.rule.auth.db.impl.PermissionGroupDaoImpl
+import co.statu.rule.auth.db.impl.UserDaoImpl
 import co.statu.rule.auth.db.model.Permission
 import co.statu.rule.auth.db.model.User
 import co.statu.rule.auth.error.*
@@ -16,10 +19,10 @@ import co.statu.rule.auth.event.AuthEventListener
 import co.statu.rule.auth.token.AuthenticationToken
 import co.statu.rule.auth.util.CsrfTokenGenerator
 import co.statu.rule.auth.util.StringUtil
-import co.statu.rule.database.Dao.Companion.get
 import co.statu.rule.database.DatabaseManager
 import co.statu.rule.plugins.i18n.I18nSystem
 import co.statu.rule.systemProperty.db.dao.SystemPropertyDao
+import co.statu.rule.systemProperty.db.impl.SystemPropertyDaoImpl
 import co.statu.rule.systemProperty.db.model.SystemProperty
 import co.statu.rule.token.provider.TokenProvider
 import io.vertx.core.http.Cookie
@@ -29,61 +32,54 @@ import io.vertx.ext.web.client.WebClient
 import io.vertx.jdbcclient.JDBCPool
 import io.vertx.kotlin.ext.web.client.sendAwait
 import org.apache.commons.validator.routines.EmailValidator
+import org.springframework.beans.factory.config.ConfigurableBeanFactory
+import org.springframework.context.annotation.Scope
+import org.springframework.stereotype.Component
 import java.util.*
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.set
 
+@Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 class AuthProvider private constructor(
-    private val databaseManager: DatabaseManager,
-    private val tokenProvider: TokenProvider,
-    private val pluginConfigManager: PluginConfigManager<AuthConfig>,
-    private val googleRecaptcha: GoogleRecaptcha,
-    private val i18nSystem: I18nSystem,
-    private val webClient: WebClient
+    private val authPlugin: AuthPlugin,
 ) {
+    private val databaseManager by lazy {
+        authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
+    }
+
+    private val i18nSystem by lazy {
+        authPlugin.pluginBeanContext.getBean(I18nSystem::class.java)
+    }
+
+    private val googleRecaptcha by lazy {
+        authPlugin.pluginBeanContext.getBean(GoogleRecaptcha::class.java)
+    }
+
+    private val pluginConfigManager by lazy {
+        authPlugin.pluginBeanContext.getBean(PluginConfigManager::class.java) as PluginConfigManager<AuthConfig>
+    }
+
+    private val tokenProvider by lazy {
+        authPlugin.pluginBeanContext.getBean(TokenProvider::class.java)
+    }
+
+    private val webClient by lazy {
+        authPlugin.pluginBeanContext.getBean(WebClient::class.java)
+    }
+
     companion object {
         private const val HEADER_PREFIX = "Bearer "
-
-        internal suspend fun create(
-            databaseManager: DatabaseManager,
-            tokenProvider: TokenProvider,
-            pluginConfigManager: PluginConfigManager<AuthConfig>,
-            googleRecaptcha: GoogleRecaptcha,
-            i18nSystem: I18nSystem,
-            webClient: WebClient
-        ): AuthProvider {
-            val authProvider = AuthProvider(
-                databaseManager,
-                tokenProvider,
-                pluginConfigManager,
-                googleRecaptcha,
-                i18nSystem,
-                webClient
-            )
-
-            val handlers = AuthPlugin.INSTANCE.context.pluginEventManager.getEventHandlers<AuthEventListener>()
-
-            handlers.forEach {
-                it.onReady(authProvider)
-            }
-
-            return authProvider
-        }
     }
 
-    private val userDao by lazy {
-        get<UserDao>(AuthPlugin.tables)
-    }
+    private val userDao: UserDao = UserDaoImpl()
 
-    private val permissionGroupDao by lazy {
-        get<PermissionGroupDao>(AuthPlugin.tables)
-    }
+    private val permissionGroupDao: PermissionGroupDao = PermissionGroupDaoImpl()
 
-    private val systemPropertyDao by lazy {
-        get<SystemPropertyDao>(AuthPlugin.externalTables)
-    }
+    private val systemPropertyDao: SystemPropertyDao = SystemPropertyDaoImpl()
 
-    private val authenticationToken by lazy {
-        AuthenticationToken()
-    }
+    private val authenticationToken = AuthenticationToken()
 
     /**
      * authenticate method validates input and checks if logs in
@@ -128,7 +124,7 @@ class AuthProvider private constructor(
     }
 
     private suspend fun onRegisterSuccess(user: User) {
-        val authEventHandlers = AuthPlugin.INSTANCE.context.pluginEventManager.getEventHandlers<AuthEventListener>()
+        val authEventHandlers = PluginEventManager.getEventListeners<AuthEventListener>()
 
         authEventHandlers.forEach {
             it.onRegistrationComplete(user)
@@ -239,7 +235,7 @@ class AuthProvider private constructor(
         val authTokenCookie = Cookie.cookie(cookieConfig.prefix + cookieConfig.authTokenName, authToken)
         val csrfTokenCookie = Cookie.cookie(cookieConfig.prefix + cookieConfig.csrfTokenName, csrfToken)
 
-        val environmentType = AuthPlugin.INSTANCE.context.environmentType
+        val environmentType = authPlugin.environmentType
 
         if (environmentType == Main.Companion.EnvironmentType.DEVELOPMENT) {
             authTokenCookie.setSameSite(CookieSameSite.NONE)
