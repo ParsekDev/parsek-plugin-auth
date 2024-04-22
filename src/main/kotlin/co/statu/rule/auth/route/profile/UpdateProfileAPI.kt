@@ -1,5 +1,6 @@
 package co.statu.rule.auth.route.profile
 
+import co.statu.parsek.annotation.Endpoint
 import co.statu.parsek.model.*
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.api.LoggedInApi
@@ -17,6 +18,7 @@ import io.vertx.json.schema.common.dsl.Schemas.objectSchema
 import io.vertx.json.schema.common.dsl.Schemas.stringSchema
 import org.apache.commons.validator.routines.EmailValidator
 
+@Endpoint
 class UpdateProfileAPI(
     private val authPlugin: AuthPlugin
 ) : LoggedInApi() {
