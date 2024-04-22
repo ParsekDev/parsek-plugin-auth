@@ -1,6 +1,7 @@
 package co.statu.rule.auth.route.profile
 
 import co.statu.parsek.PluginEventManager
+import co.statu.parsek.annotation.Endpoint
 import co.statu.parsek.model.Path
 import co.statu.parsek.model.Result
 import co.statu.parsek.model.RouteType
@@ -13,6 +14,7 @@ import co.statu.rule.database.DatabaseManager
 import io.vertx.ext.web.RoutingContext
 import io.vertx.json.schema.SchemaParser
 
+@Endpoint
 class GetProfileAPI(
     private val authPlugin: AuthPlugin
 ) : LoggedInApi() {
