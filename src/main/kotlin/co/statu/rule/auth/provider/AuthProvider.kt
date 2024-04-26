@@ -141,8 +141,8 @@ class AuthProvider private constructor(
         jdbcPool: JDBCPool,
     ): UUID {
         val user = User(
-            name = name,
-            surname = surname,
+            name = name.replaceFirstChar(Char::uppercase),
+            surname = surname.replaceFirstChar(Char::uppercase),
             email = email,
             registeredIp = remoteIP,
             lang = lang
