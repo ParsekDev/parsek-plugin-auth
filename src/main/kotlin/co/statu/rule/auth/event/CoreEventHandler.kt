@@ -65,6 +65,8 @@ class CoreEventHandler(
             it.onReady(authProvider)
         }
 
+        authPlugin.registerSingletonGlobal(authFieldManager)
+
         authFieldManager.init()
     }
 }
