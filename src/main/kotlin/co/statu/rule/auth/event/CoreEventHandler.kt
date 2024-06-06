@@ -6,7 +6,6 @@ import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.parsek.api.event.CoreEventListener
 import co.statu.parsek.config.ConfigManager
 import co.statu.rule.auth.AuthConfig
-import co.statu.rule.auth.AuthFieldManager
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.InvitationCodeSystem
 import co.statu.rule.auth.config.migration.*
@@ -24,10 +23,6 @@ class CoreEventHandler(
 
     private val authProvider by lazy {
         authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
-    }
-
-    private val authFieldManager by lazy {
-        authPlugin.pluginBeanContext.getBean(AuthFieldManager::class.java)
     }
 
     override suspend fun onConfigManagerReady(configManager: ConfigManager) {
@@ -64,7 +59,5 @@ class CoreEventHandler(
         handlers.forEach {
             it.onReady(authProvider)
         }
-
-        authFieldManager.init()
     }
 }
