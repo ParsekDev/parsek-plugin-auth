@@ -54,7 +54,10 @@ class ConfirmDeleteAccountMail(private val pluginConfigManager: PluginConfigMana
 
         parameters.put("link", "$uiAddress/account/delete?email=$email&code=$code&signature=$signature")
         parameters.put("code", code)
-        parameters.put("name", " " + user.name)
+
+        user.additionalFields.forEach {
+            parameters.put(it.key, it.value)
+        }
 
         return parameters
     }

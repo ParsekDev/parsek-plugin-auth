@@ -2,12 +2,14 @@ package co.statu.rule.auth.route.profile
 
 import co.statu.parsek.annotation.Endpoint
 import co.statu.parsek.model.*
+import co.statu.rule.auth.AuthFieldManager
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.api.LoggedInApi
-import co.statu.rule.auth.error.*
+import co.statu.rule.auth.error.EmailNotAvailable
+import co.statu.rule.auth.error.InvalidEmail
 import co.statu.rule.auth.provider.AuthProvider
 import co.statu.rule.database.DatabaseManager
-import co.statu.rule.plugins.i18n.I18nSystem
+import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.validation.RequestPredicate
 import io.vertx.ext.web.validation.ValidationHandler
@@ -28,12 +30,12 @@ class UpdateProfileAPI(
         authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
     }
 
-    private val i18nSystem by lazy {
-        authPlugin.pluginBeanContext.getBean(I18nSystem::class.java)
-    }
-
     private val authProvider by lazy {
         authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
+    }
+
+    private val authFieldManager by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthFieldManager::class.java)
     }
 
     override fun getValidationHandler(schemaParser: SchemaParser): ValidationHandler =
@@ -41,10 +43,7 @@ class UpdateProfileAPI(
             .body(
                 json(
                     objectSchema()
-                        .optionalProperty("name", stringSchema())
-                        .optionalProperty("surname", stringSchema())
                         .optionalProperty("email", stringSchema())
-                        .optionalProperty("lang", stringSchema())
                 )
             )
             .predicate(RequestPredicate.BODY_REQUIRED)
@@ -54,23 +53,19 @@ class UpdateProfileAPI(
         val parameters = getParameters(context)
         val data = parameters.body().jsonObject
 
-        val name = data.getString("name")
-        val surname = data.getString("surname")
         val email = data.getString("email")
-        val lang = data.getString("lang")
 
         val userId = authProvider.getUserIdFromRoutingContext(context)
-
-        validateInput(
-            name,
-            surname,
-            email,
-            lang
-        )
 
         val jdbcPool = databaseManager.getConnectionPool()
 
         val user = userDao.getById(userId, jdbcPool)!!
+
+        validateInput(
+            email,
+            data,
+            user.additionalFields
+        )
 
         if (email != null && email != user.email) {
             val emailExists = userDao.isEmailExists(email, jdbcPool)
@@ -80,22 +75,16 @@ class UpdateProfileAPI(
             }
         }
 
-        if (name != null) {
-            user.name = name
-        }
-
-        if (surname != null) {
-            user.surname = surname
-        }
-
-        user.fullName = "${user.name} ${user.surname}"
-
         if (email != null) {
             user.email = email
         }
 
-        if (lang != null) {
-            user.lang = lang
+        val additionalFields = authFieldManager.getAdditionalFields(data)
+
+        if (!additionalFields.isEmpty) {
+            additionalFields.forEach { additionalField ->
+                user.additionalFields.put(additionalField.key, additionalField.value)
+            }
         }
 
         userDao.update(user, jdbcPool)
@@ -103,32 +92,15 @@ class UpdateProfileAPI(
         return Successful()
     }
 
-    private fun validateInput(
-        name: String?,
-        surname: String?,
+    private suspend fun validateInput(
         email: String?,
-        lang: String?
+        data: JsonObject,
+        additionalFields: JsonObject,
     ) {
-        val errors = mutableMapOf<String, Error>()
-
-        if (name != null && (name.isBlank() || name.length > 32 || name.length < 2)) {
-            errors["name"] = InvalidName()
-        }
-
-        if (surname != null && (surname.isBlank() || surname.length > 32 || surname.length < 2)) {
-            errors["surname"] = InvalidSurname()
-        }
-
         if (email != null && (email.isBlank() || !EmailValidator.getInstance().isValid(email))) {
-            errors["email"] = InvalidEmail()
+            throw InvalidEmail()
         }
 
-        if (lang != null && (lang.isBlank() || i18nSystem.getSupportedLocales().none { it == lang })) {
-            errors["lang"] = InvalidLang()
-        }
-
-        if (errors.isNotEmpty()) {
-            throw Errors(errors)
-        }
+        authFieldManager.validateFields(data, additionalFields)
     }
 }

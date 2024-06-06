@@ -5,6 +5,7 @@ import co.statu.rule.auth.db.impl.*
 import co.statu.rule.auth.db.migration.DbMigration1To2
 import co.statu.rule.auth.db.migration.DbMigration2To3
 import co.statu.rule.auth.db.migration.DbMigration3To4
+import co.statu.rule.auth.db.migration.DbMigration4To5
 import co.statu.rule.auth.provider.AuthProvider
 import co.statu.rule.database.Dao
 import co.statu.rule.database.DatabaseManager
@@ -40,7 +41,8 @@ class AuthPlugin : ParsekPlugin(), DatabaseHelper {
         listOf(
             DbMigration1To2(),
             DbMigration2To3(),
-            DbMigration3To4()
+            DbMigration3To4(),
+            DbMigration4To5()
         )
     }
 }

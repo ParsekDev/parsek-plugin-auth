@@ -6,6 +6,7 @@ import co.statu.parsek.model.Path
 import co.statu.parsek.model.Result
 import co.statu.parsek.model.RouteType
 import co.statu.parsek.model.Successful
+import co.statu.rule.auth.AuthFieldManager
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.api.LoggedInApi
 import co.statu.rule.auth.event.AuthEventListener
@@ -27,6 +28,10 @@ class GetProfileAPI(
         authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
     }
 
+    private val authFieldManager by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthFieldManager::class.java)
+    }
+
     override val paths = listOf(Path("/profile", RouteType.GET))
 
     override fun getValidationHandler(schemaParser: SchemaParser) = null
@@ -40,10 +45,17 @@ class GetProfileAPI(
 
         val response = mutableMapOf<String, Any?>()
 
-        response["name"] = user.name
-        response["surname"] = user.surname
         response["email"] = user.email
-        response["lang"] = user.lang
+
+        val registerFields = authFieldManager.getRegisterFields()
+
+        user.additionalFields.forEach { additionalField ->
+            val registerField = registerFields.find { it.field == additionalField.key }
+
+            if (registerField != null && registerField.hiddenToUI == false) {
+                response[additionalField.key] = additionalField.value
+            }
+        }
 
         val authEventHandlers = PluginEventManager.getEventListeners<AuthEventListener>()
 

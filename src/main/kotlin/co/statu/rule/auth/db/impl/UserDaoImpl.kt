@@ -20,9 +20,6 @@ class UserDaoImpl : UserDao() {
                 """
                         CREATE TABLE IF NOT EXISTS `${getTablePrefix() + tableName}` (
                             `id` UUID NOT NULL,
-                            `name` String NOT NULL,
-                            `surname` String NOT NULL,
-                            `fullName` String NOT NULL,
                             `email` String NOT NULL,
                             `permissionGroupId` Nullable(UUID),
                             `registeredIp` String NOT NULL,
@@ -30,8 +27,8 @@ class UserDaoImpl : UserDao() {
                             `lastLoginDate` Int64 NOT NULL,
                             `lastActivityTime` Int64 DEFAULT 0,
                             `lastPanelActivityTime` Int64 DEFAULT 0,
-                            `lang` String DEFAULT 'EN',
-                            `active` Bool DEFAULT true
+                            `active` Bool DEFAULT true,
+                            `additionalFields` Bool DEFAULT '{}'
                         ) ENGINE = MergeTree() order by `registerDate`;
             """
             )
@@ -45,16 +42,13 @@ class UserDaoImpl : UserDao() {
     ): UUID {
         val query =
             "INSERT INTO `${getTablePrefix() + tableName}` (${fields.toTableQuery()}) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
         jdbcPool
             .preparedQuery(query)
             .execute(
                 Tuple.of(
                     user.id,
-                    user.name,
-                    user.surname,
-                    user.fullName,
                     user.email,
                     user.permissionGroupId,
                     user.registeredIp,
@@ -62,8 +56,8 @@ class UserDaoImpl : UserDao() {
                     user.lastLoginDate,
                     user.lastActivityTime,
                     user.lastPanelActivityTime,
-                    user.lang,
-                    user.active
+                    user.active,
+                    user.additionalFields.encode(),
                 )
             )
             .await()
@@ -88,6 +82,36 @@ class UserDaoImpl : UserDao() {
             .await()
 
         return rows.toList()[0].getLong(0) == 1L
+    }
+
+    override suspend fun isAdditionalFieldUnique(
+        additionalField: String,
+        value: String,
+        jdbcPool: JDBCPool
+    ): Boolean {
+        val query = """
+            SELECT field, count(*) AS occurrences
+            FROM
+                (
+                    SELECT JSONExtractString(`additionalFields`, ?) AS field
+                    FROM `${getTablePrefix() + tableName}`
+                    ) AS extracted_field
+            WHERE field = ?
+            GROUP BY field
+            HAVING occurrences > 0;
+        """.trimIndent()
+
+        val rows: RowSet<Row> = jdbcPool
+            .preparedQuery(query)
+            .execute(
+                Tuple.of(
+                    additionalField,
+                    value
+                )
+            )
+            .await()
+
+        return rows.toList().getOrNull(0) == null || rows.toList()[0].size() == 0
     }
 
     override suspend fun getUserIdFromEmail(
@@ -270,17 +294,14 @@ class UserDaoImpl : UserDao() {
 
     override suspend fun update(user: User, jdbcPool: JDBCPool) {
         val query =
-            "UPDATE `${getTablePrefix() + tableName}` SET `name` = ?, `surname` = ?, `fullName` = ?, `email` = ?, `permissionGroupId` = ?, `lang` = ?, `active` = ? WHERE `id` = ?"
+            "UPDATE `${getTablePrefix() + tableName}` SET `email` = ?, `permissionGroupId` = ?, `active` = ?, `additionalFields` = ? WHERE `id` = ?"
 
         val parameters = Tuple.tuple()
 
-        parameters.addString(user.name)
-        parameters.addString(user.surname)
-        parameters.addString(user.fullName)
         parameters.addString(user.email)
         parameters.addUUID(user.permissionGroupId)
-        parameters.addString(user.lang)
         parameters.addBoolean(user.active)
+        parameters.addString(user.additionalFields.encode())
 
         parameters.addUUID(user.id)
 

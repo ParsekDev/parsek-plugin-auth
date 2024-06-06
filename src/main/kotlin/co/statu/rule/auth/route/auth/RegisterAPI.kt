@@ -22,7 +22,7 @@ import kotlin.collections.set
 
 @Endpoint
 class RegisterAPI(
-    private val authPlugin: AuthPlugin
+    private val authPlugin: AuthPlugin,
 ) : Api() {
     private val databaseManager by lazy {
         authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
@@ -43,9 +43,6 @@ class RegisterAPI(
             .body(
                 json(
                     objectSchema()
-                        .requiredProperty("name", stringSchema())
-                        .requiredProperty("surname", stringSchema())
-                        .requiredProperty("lang", stringSchema())
                         .requiredProperty("token", stringSchema())
                         .requiredProperty("recaptcha", stringSchema())
                 )
@@ -61,17 +58,10 @@ class RegisterAPI(
         val parameters = getParameters(context)
         val data = parameters.body().jsonObject
 
-        val name = data.getString("name")
-        val surname = data.getString("surname")
-        val lang = data.getString("lang")
         val registerToken = data.getString("token")
         val recaptcha = data.getString("recaptcha")
 
-        authProvider.validateRegisterInput(
-            name,
-            surname,
-            lang
-        )
+        authProvider.validateRegisterInput(data)
 
         authProvider.validateRecaptcha(recaptcha)
 
@@ -96,10 +86,8 @@ class RegisterAPI(
         tokenProvider.invalidateTokensBySubjectAndType(email, registerTokenObject, jdbcPool)
 
         val userId = authProvider.register(
-            name,
-            surname,
             email,
-            lang,
+            data,
             remoteIP = remoteIP,
             jdbcPool = jdbcPool
         )

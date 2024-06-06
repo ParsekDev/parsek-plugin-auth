@@ -9,7 +9,8 @@ class AuthConfig(
     val cookieConfig: CookieConfig = CookieConfig(),
     val whitelistUrl: String? = null,
     val invitationConfig: InvitationConfig = InvitationConfig(),
-    val tempMailCheckConfig: TempMailCheckConfig = TempMailCheckConfig()
+    val tempMailCheckConfig: TempMailCheckConfig = TempMailCheckConfig(),
+    val registerFields: List<RegisterField> = listOf()
 ) : PluginConfig() {
     companion object {
         data class RecaptchaConfig(
@@ -34,5 +35,29 @@ class AuthConfig(
         data class TempMailCheckConfig(
             val enabled: Boolean = true
         )
+
+        data class RegisterField(
+            val field: String,
+            val isBlankCheck: Boolean = true,
+            val optional: Boolean? = false,
+            val min: Any? = null,
+            val max: Any? = null,
+            val regex: String? = null,
+            val unique: Boolean = false,
+            val upperCaseFirstChar: Boolean? = false,
+            val hiddenToUI: Boolean? = false,
+            val type: Type,
+            val onlyRegister: Boolean = false
+        ) {
+            companion object {
+                enum class Type {
+                    STRING,
+                    BOOLEAN,
+                    INT,
+                    FLOAT,
+                    DOUBLE
+                }
+            }
+        }
     }
 }

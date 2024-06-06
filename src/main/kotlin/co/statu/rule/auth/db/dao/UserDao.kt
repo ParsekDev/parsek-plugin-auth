@@ -17,6 +17,12 @@ abstract class UserDao : Dao<User>(User::class) {
         jdbcPool: JDBCPool
     ): Boolean
 
+    abstract suspend fun isAdditionalFieldUnique(
+        additionalField: String,
+        value: String,
+        jdbcPool: JDBCPool
+    ): Boolean
+
     abstract suspend fun getUserIdFromEmail(
         email: String,
         jdbcPool: JDBCPool

@@ -52,7 +52,10 @@ class MagicLoginMail(private val pluginConfigManager: PluginConfigManager<AuthCo
 
         parameters.put("link", "$uiAddress/auth/link?code=$code&email=$email&signature=$signature")
         parameters.put("code", code)
-        parameters.put("name", " " + user.name)
+
+        user.additionalFields.forEach {
+            parameters.put(it.key, it.value)
+        }
 
         return parameters
     }

@@ -4,6 +4,7 @@ import co.statu.parsek.annotation.Endpoint
 import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.parsek.model.*
 import co.statu.rule.auth.AuthConfig
+import co.statu.rule.auth.AuthFieldManager
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.db.dao.UserDao
 import co.statu.rule.auth.db.impl.UserDaoImpl
@@ -17,6 +18,7 @@ import co.statu.rule.database.DatabaseManager
 import co.statu.rule.mail.MailManager
 import co.statu.rule.token.db.dao.TokenDao
 import co.statu.rule.token.db.impl.TokenDaoImpl
+import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.validation.ValidationHandler
 import io.vertx.ext.web.validation.builder.Parameters.optionalParam
@@ -43,6 +45,10 @@ class DeleteAccountAPI(
 
     private val authProvider by lazy {
         authPlugin.pluginBeanContext.getBean(AuthProvider::class.java)
+    }
+
+    private val authFieldManager by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthFieldManager::class.java)
     }
 
     override val paths = listOf(Path("/account", RouteType.DELETE))
@@ -127,11 +133,10 @@ class DeleteAccountAPI(
 
         val deletedUserTime = System.currentTimeMillis()
 
-        user.name = "Deleted - $deletedUserTime"
-        user.surname = ""
-        user.fullName = "Deleted - $deletedUserTime"
         user.email = "deleted-account-${deletedUserTime}@parsek.backend"
         user.active = false
+
+        user.additionalFields = JsonObject()
 
         userDao.update(user, jdbcPool)
 

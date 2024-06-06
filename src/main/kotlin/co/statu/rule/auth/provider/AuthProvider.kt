@@ -4,10 +4,7 @@ import co.statu.parsek.Main
 import co.statu.parsek.PluginEventManager
 import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.parsek.error.NoPermission
-import co.statu.rule.auth.AuthConfig
-import co.statu.rule.auth.AuthPlugin
-import co.statu.rule.auth.GoogleRecaptcha
-import co.statu.rule.auth.PanelPermission
+import co.statu.rule.auth.*
 import co.statu.rule.auth.db.dao.PermissionGroupDao
 import co.statu.rule.auth.db.dao.UserDao
 import co.statu.rule.auth.db.impl.PermissionGroupDaoImpl
@@ -20,13 +17,13 @@ import co.statu.rule.auth.token.AuthenticationToken
 import co.statu.rule.auth.util.CsrfTokenGenerator
 import co.statu.rule.auth.util.StringUtil
 import co.statu.rule.database.DatabaseManager
-import co.statu.rule.plugins.i18n.I18nSystem
 import co.statu.rule.systemProperty.db.dao.SystemPropertyDao
 import co.statu.rule.systemProperty.db.impl.SystemPropertyDaoImpl
 import co.statu.rule.systemProperty.db.model.SystemProperty
 import co.statu.rule.token.provider.TokenProvider
 import io.vertx.core.http.Cookie
 import io.vertx.core.http.CookieSameSite
+import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.client.WebClient
 import io.vertx.jdbcclient.JDBCPool
@@ -49,10 +46,6 @@ class AuthProvider private constructor(
         authPlugin.pluginBeanContext.getBean(DatabaseManager::class.java)
     }
 
-    private val i18nSystem by lazy {
-        authPlugin.pluginBeanContext.getBean(I18nSystem::class.java)
-    }
-
     private val googleRecaptcha by lazy {
         authPlugin.pluginBeanContext.getBean(GoogleRecaptcha::class.java)
     }
@@ -67,6 +60,10 @@ class AuthProvider private constructor(
 
     private val webClient by lazy {
         authPlugin.pluginBeanContext.getBean(WebClient::class.java)
+    }
+
+    private val authFieldManager by lazy {
+        authPlugin.pluginBeanContext.getBean(AuthFieldManager::class.java)
     }
 
     companion object {
@@ -105,22 +102,8 @@ class AuthProvider private constructor(
         }
     }
 
-    fun validateRegisterInput(
-        name: String,
-        surname: String,
-        lang: String,
-    ) {
-        if (name.isBlank() || name.length < 2 || name.length > 32) {
-            throw InvalidName()
-        }
-
-        if (surname.isBlank() || surname.length < 2 || surname.length > 32) {
-            throw InvalidSurname()
-        }
-
-        if (lang.isBlank() || i18nSystem.getSupportedLocales().none { it == lang }) {
-            throw InvalidLang()
-        }
+    suspend fun validateRegisterInput(body: JsonObject) {
+        authFieldManager.validateFields(body, register = true)
     }
 
     private suspend fun onRegisterSuccess(user: User) {
@@ -132,20 +115,18 @@ class AuthProvider private constructor(
     }
 
     suspend fun register(
-        name: String,
-        surname: String,
         email: String,
-        lang: String,
+        data: JsonObject,
         remoteIP: String,
         isAdmin: Boolean = false,
         jdbcPool: JDBCPool,
     ): UUID {
+        val additionalFields = authFieldManager.getAdditionalFields(data)
+
         val user = User(
-            name = name.replaceFirstChar(Char::uppercase),
-            surname = surname.replaceFirstChar(Char::uppercase),
             email = email,
             registeredIp = remoteIP,
-            lang = lang
+            additionalFields = additionalFields
         )
         val userId: UUID
 
@@ -158,14 +139,12 @@ class AuthProvider private constructor(
         }
 
         val adminPermissionGroupId = permissionGroupDao.getPermissionGroupIdByName(
-            "admin",
-            jdbcPool
+            "admin", jdbcPool
         )!!
 
         val adminUser = User(
-            name = name,
-            surname = surname,
             email = email,
+            additionalFields = additionalFields,
             registeredIp = remoteIP,
             permissionGroupId = adminPermissionGroupId
         )
@@ -175,14 +154,12 @@ class AuthProvider private constructor(
         val property = SystemProperty(option = "who_installed_user_id", value = userId.toString())
 
         val isPropertyExists = systemPropertyDao.isPropertyExists(
-            property,
-            jdbcPool
+            property, jdbcPool
         )
 
         if (isPropertyExists) {
             systemPropertyDao.update(
-                property,
-                jdbcPool
+                property, jdbcPool
             )
 
             onRegisterSuccess(user)
@@ -191,8 +168,7 @@ class AuthProvider private constructor(
         }
 
         systemPropertyDao.add(
-            property,
-            jdbcPool
+            property, jdbcPool
         )
 
         onRegisterSuccess(user)
@@ -201,12 +177,10 @@ class AuthProvider private constructor(
     }
 
     suspend fun login(
-        email: String,
-        jdbcPool: JDBCPool
+        email: String, jdbcPool: JDBCPool
     ): Pair<String, String> {
         val userId = userDao.getUserIdFromEmail(
-            email,
-            jdbcPool
+            email, jdbcPool
         )!!
 
         val (token, expireDate) = tokenProvider.generateToken(userId.toString(), authenticationToken)
@@ -219,9 +193,7 @@ class AuthProvider private constructor(
     }
 
     fun setCookies(
-        routingContext: RoutingContext,
-        authToken: String,
-        csrfToken: String
+        routingContext: RoutingContext, authToken: String, csrfToken: String
     ): Boolean {
         val config = pluginConfigManager.config
         val cookieConfig = config.cookieConfig
@@ -279,8 +251,7 @@ class AuthProvider private constructor(
     }
 
     suspend fun validateLoginInput(
-        email: String,
-        recaptcha: String
+        email: String, recaptcha: String
     ) {
         if (email.isEmpty()) {
             throw InvalidEmail()
@@ -295,8 +266,7 @@ class AuthProvider private constructor(
         val config = pluginConfigManager.config
 
         if (!config.whitelistUrl.isNullOrBlank()) {
-            val response = webClient.getAbs(config.whitelistUrl)
-                .sendAwait()
+            val response = webClient.getAbs(config.whitelistUrl).sendAwait()
 
             val bodyAsJsonObject = response.bodyAsJsonObject()
 
@@ -318,8 +288,7 @@ class AuthProvider private constructor(
 
         try {
             val response = webClient.getAbs("https://disposable.debounce.io/")
-                .addQueryParam("email", StringUtil.anonymizeEmail(email))
-                .sendAwait()
+                .addQueryParam("email", StringUtil.anonymizeEmail(email)).sendAwait()
 
             if (response.statusCode() != 200 && response.statusCode() != 201) {
                 return
