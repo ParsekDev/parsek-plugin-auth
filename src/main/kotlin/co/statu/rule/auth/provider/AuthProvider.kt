@@ -346,7 +346,7 @@ class AuthProvider private constructor(
 
         val config = pluginConfigManager.config
         val cookieConfig = config.cookieConfig
-        val cookieHeader = request.getHeader("cookie") ?: return null
+        val cookieHeader = request.getHeader("cookie") ?: ""
 
         val cookies = parseCookies(cookieHeader)
 
@@ -387,15 +387,21 @@ class AuthProvider private constructor(
             return
         }
 
+        val authorizationHeader = routingContext.request().getHeader("Authorization")
+
+        if (authorizationHeader != null) {
+            return
+        }
+
         val cookieHeader = request.getHeader("cookie") ?: throw InvalidCSRF()
 
         val cookies = parseCookies(cookieHeader)
 
         val csrfCookie = cookies[cookieConfig.prefix + cookieConfig.csrfTokenName] ?: throw InvalidCSRF()
 
-        val authorizationHeader = routingContext.request().getHeader(cookieConfig.csrfHeader) ?: throw InvalidCSRF()
+        val csrfHeader = routingContext.request().getHeader(cookieConfig.csrfHeader) ?: throw InvalidCSRF()
 
-        if (authorizationHeader != csrfCookie) {
+        if (csrfHeader != csrfCookie) {
             throw InvalidCSRF()
         }
     }
