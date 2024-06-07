@@ -217,13 +217,13 @@ class AuthProvider private constructor(
         cookieConfig.domain?.let { authTokenCookie.domain = it }
         authTokenCookie.setMaxAge(7776000)
         authTokenCookie.path = "/"
-        authTokenCookie.isSecure = true
+        authTokenCookie.isSecure = cookieConfig.secure
         authTokenCookie.isHttpOnly = true
 
         cookieConfig.domain?.let { csrfTokenCookie.domain = it }
         csrfTokenCookie.setMaxAge(7776000)
         csrfTokenCookie.path = "/"
-        csrfTokenCookie.isSecure = true
+        csrfTokenCookie.isSecure = cookieConfig.secure
         csrfTokenCookie.isHttpOnly = true
 
         response.addCookie(authTokenCookie)

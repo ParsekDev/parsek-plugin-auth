@@ -24,7 +24,8 @@ class AuthConfig(
             val authTokenName: String = "auth_token",
             val csrfTokenName: String = "csrf_token",
             val csrfHeader: String = "X-CSRF-Token",
-            val domain: String? = null
+            val domain: String? = null,
+            val secure: Boolean = true
         )
 
         data class InvitationConfig(
