@@ -332,10 +332,13 @@ class AuthProvider private constructor(
     private fun parseCookies(cookieHeader: String): Map<String, String> {
         val cookies = mutableMapOf<String, String>()
 
-        val cookiePairs = cookieHeader.split(";")
-        for (cookiePair in cookiePairs) {
-            val (name, value) = cookiePair.trim().split("=")
-            cookies[name] = value
+        try {
+            val cookiePairs = cookieHeader.split(";")
+            for (cookiePair in cookiePairs) {
+                val (name, value) = cookiePair.trim().split("=")
+                cookies[name] = value
+            }
+        } catch (_: Exception) {
         }
 
         return cookies
