@@ -104,7 +104,7 @@ class SendMagicLinkAPI(
                 jdbcPool
             )
 
-            if (token != null && TimeUtil.getDifferenceInSeconds(token.startDate) >= config.resendCodeTime) {
+            if (token != null && TimeUtil.getDifferenceInSeconds(token.startDate) < config.resendCodeTime) {
                 throw VerifyCodeNotAvailable(
                     extras = mapOf(
                         "resendCodeTime" to TimeUtil.getTimeAfterSeconds(token.startDate, config.resendCodeTime)
