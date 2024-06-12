@@ -10,7 +10,8 @@ class AuthConfig(
     val whitelistUrl: String? = null,
     val invitationConfig: InvitationConfig = InvitationConfig(),
     val tempMailCheckConfig: TempMailCheckConfig = TempMailCheckConfig(),
-    val registerFields: List<RegisterField> = listOf()
+    val registerFields: List<RegisterField> = listOf(),
+    val resendCodeTime: Long? = 0
 ) : PluginConfig() {
     companion object {
         data class RecaptchaConfig(

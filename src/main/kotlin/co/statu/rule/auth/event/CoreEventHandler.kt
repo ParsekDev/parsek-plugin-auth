@@ -42,7 +42,8 @@ class CoreEventHandler(
                 ConfigMigration4to5(),
                 ConfigMigration5to6(),
                 ConfigMigration6to7(),
-                ConfigMigration7to8()
+                ConfigMigration7to8(),
+                ConfigMigration8to9()
             ),
             listOf("auth")
         )
