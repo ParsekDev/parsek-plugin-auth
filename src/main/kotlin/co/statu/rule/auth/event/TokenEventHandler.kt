@@ -15,7 +15,8 @@ class TokenEventHandler : TokenEventListener {
                 ConfirmDeleteAccountToken(),
                 MagicLoginToken(),
                 MagicRegisterToken(),
-                RegisterToken()
+                RegisterToken(),
+                MagicChangeEmailToken()
             )
         )
     }

@@ -1,14 +1,18 @@
 package co.statu.rule.auth.route.profile
 
 import co.statu.parsek.annotation.Endpoint
+import co.statu.parsek.api.config.PluginConfigManager
 import co.statu.parsek.model.*
+import co.statu.rule.auth.AuthConfig
 import co.statu.rule.auth.AuthFieldManager
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.api.LoggedInApi
 import co.statu.rule.auth.error.EmailNotAvailable
 import co.statu.rule.auth.error.InvalidEmail
+import co.statu.rule.auth.mail.MagicChangeMail
 import co.statu.rule.auth.provider.AuthProvider
 import co.statu.rule.database.DatabaseManager
+import co.statu.rule.mail.MailManager
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.validation.RequestPredicate
@@ -19,6 +23,7 @@ import io.vertx.json.schema.SchemaParser
 import io.vertx.json.schema.common.dsl.Schemas.objectSchema
 import io.vertx.json.schema.common.dsl.Schemas.stringSchema
 import org.apache.commons.validator.routines.EmailValidator
+import java.util.*
 
 @Endpoint
 class UpdateProfileAPI(
@@ -36,6 +41,14 @@ class UpdateProfileAPI(
 
     private val authFieldManager by lazy {
         authPlugin.pluginBeanContext.getBean(AuthFieldManager::class.java)
+    }
+
+    private val pluginConfigManager by lazy {
+        authPlugin.pluginBeanContext.getBean(PluginConfigManager::class.java) as PluginConfigManager<AuthConfig>
+    }
+
+    private val mailManager by lazy {
+        authPlugin.pluginBeanContext.getBean(MailManager::class.java)
     }
 
     override fun getValidationHandler(schemaParser: SchemaParser): ValidationHandler =
@@ -73,10 +86,8 @@ class UpdateProfileAPI(
             if (emailExists) {
                 throw Errors(mapOf("email" to EmailNotAvailable()))
             }
-        }
 
-        if (email != null) {
-            user.email = email
+            sendChangeEmailLink(user.id, email)
         }
 
         val additionalFields = authFieldManager.getAdditionalFields(data)
@@ -102,5 +113,9 @@ class UpdateProfileAPI(
         }
 
         authFieldManager.validateFields(data, additionalFields)
+    }
+
+    private suspend fun sendChangeEmailLink(userId: UUID, email: String) {
+        mailManager.sendMail(userId, email, MagicChangeMail(pluginConfigManager))
     }
 }

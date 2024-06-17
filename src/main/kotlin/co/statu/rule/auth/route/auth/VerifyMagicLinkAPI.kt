@@ -12,6 +12,7 @@ import co.statu.rule.auth.error.InvalidEmail
 import co.statu.rule.auth.error.InvalidSignature
 import co.statu.rule.auth.error.InvalidSignatureOrRecaptcha
 import co.statu.rule.auth.provider.AuthProvider
+import co.statu.rule.auth.token.MagicChangeEmailToken
 import co.statu.rule.auth.token.MagicLoginToken
 import co.statu.rule.auth.token.MagicRegisterToken
 import co.statu.rule.auth.token.RegisterToken
@@ -71,6 +72,8 @@ class VerifyMagicLinkAPI(
 
     private val magicRegisterToken = MagicRegisterToken()
 
+    private val magicChangeEmailToken = MagicChangeEmailToken()
+
     private val registerTokenObject = RegisterToken()
 
     private val magicLoginToken = MagicLoginToken()
@@ -109,6 +112,26 @@ class VerifyMagicLinkAPI(
         }
 
         val jdbcPool = databaseManager.getConnectionPool()
+
+        val changeEmailToken = tokenDao.getByTokenSubjectAndType(magicCode, email, magicChangeEmailToken, jdbcPool)
+
+        if (changeEmailToken != null) {
+            tokenProvider.invalidateTokensBySubjectAndType(email, magicLoginToken, jdbcPool)
+            tokenProvider.invalidateTokensBySubjectAndType(email, magicChangeEmailToken, jdbcPool)
+
+            val userId = userDao.getUserIdFromEmail(email, jdbcPool)!!
+            val user = userDao.getById(userId, jdbcPool)!!
+
+            user.email = email
+
+            userDao.update(user, jdbcPool)
+
+            return Successful(
+                mapOf(
+                    "magicLinkType" to MagicLinkType.CHANGE_EMAIl
+                )
+            )
+        }
 
         val registerToken =
             tokenDao.getByTokenSubjectAndType(magicCode, email, magicRegisterToken, jdbcPool)
@@ -174,6 +197,6 @@ class VerifyMagicLinkAPI(
     }
 
     enum class MagicLinkType {
-        REGISTER, LOGIN
+        REGISTER, LOGIN, CHANGE_EMAIl
     }
 }
