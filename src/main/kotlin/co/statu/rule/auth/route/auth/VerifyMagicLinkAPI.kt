@@ -114,7 +114,7 @@ class VerifyMagicLinkAPI(
             tokenDao.getByTokenSubjectAndType(magicCode, email, magicRegisterToken, jdbcPool)
 
         if (registerToken != null) {
-            tokenProvider.invalidateToken(magicCode)
+            tokenProvider.invalidateTokensBySubjectAndType(email, magicRegisterToken, jdbcPool)
 
             if (registerToken.expireDate < System.currentTimeMillis()) {
                 throw InvalidCode()
