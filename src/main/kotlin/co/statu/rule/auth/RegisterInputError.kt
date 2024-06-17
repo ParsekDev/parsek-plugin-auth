@@ -8,7 +8,7 @@ class RegisterInputError(
     private val prefix: String,
     private val suffix: String,
     private val field: String,
-    private val statusCode: Int = 500,
+    private val statusCode: Int = 422,
     private val statusMessage: String = "",
     private val extras: Map<String, Any?> = mapOf()
 ) : Throwable(), Result {
