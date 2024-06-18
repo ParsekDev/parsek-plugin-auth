@@ -40,10 +40,11 @@ class MagicChangeMail(private val pluginConfigManager: PluginConfigManager<AuthC
 
         tokenProvider.saveToken(
             formattedCode,
-            userId.toString(),
+            email,
             magicChangeEmailToken,
             magicChangeEmailToken.getExpireDateFromNow(),
-            jdbcPool
+            JsonObject().put("userId", userId),
+            jdbcPool = jdbcPool
         )
 
         val signature = SecurityUtil.encodeSha256HMAC(secretKey, email + formattedCode)

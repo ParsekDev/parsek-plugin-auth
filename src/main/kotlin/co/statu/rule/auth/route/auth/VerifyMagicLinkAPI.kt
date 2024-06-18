@@ -29,6 +29,7 @@ import io.vertx.ext.web.validation.builder.ValidationHandlerBuilder
 import io.vertx.json.schema.SchemaParser
 import io.vertx.json.schema.common.dsl.Schemas.objectSchema
 import io.vertx.json.schema.common.dsl.Schemas.stringSchema
+import java.util.*
 
 @Endpoint
 class VerifyMagicLinkAPI(
@@ -116,11 +117,11 @@ class VerifyMagicLinkAPI(
         val changeEmailToken = tokenDao.getByTokenSubjectAndType(magicCode, email, magicChangeEmailToken, jdbcPool)
 
         if (changeEmailToken != null) {
-            tokenProvider.invalidateTokensBySubjectAndType(email, magicLoginToken, jdbcPool)
-            tokenProvider.invalidateTokensBySubjectAndType(email, magicChangeEmailToken, jdbcPool)
-
-            val userId = userDao.getUserIdFromEmail(email, jdbcPool)!!
+            val userId = UUID.fromString(changeEmailToken.additionalClaims.getString("userId"))
             val user = userDao.getById(userId, jdbcPool)!!
+
+            tokenProvider.invalidateTokensBySubjectAndType(user.email, magicLoginToken, jdbcPool)
+            tokenProvider.invalidateTokensBySubjectAndType(email, magicChangeEmailToken, jdbcPool)
 
             user.email = email
 
@@ -149,7 +150,7 @@ class VerifyMagicLinkAPI(
                 mapOf("email" to email)
             )
 
-            tokenProvider.saveToken(token, email, registerTokenObject, expireDate, jdbcPool)
+            tokenProvider.saveToken(token, email, registerTokenObject, expireDate, jdbcPool = jdbcPool)
 
             return Successful(
                 mapOf(

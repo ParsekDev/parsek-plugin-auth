@@ -43,7 +43,7 @@ class MagicLoginMail(private val pluginConfigManager: PluginConfigManager<AuthCo
             userId.toString(),
             magicLoginToken,
             magicLoginToken.getExpireDateFromNow(),
-            jdbcPool
+            jdbcPool = jdbcPool
         )
 
         val signature = SecurityUtil.encodeSha256HMAC(secretKey, email + formattedCode)

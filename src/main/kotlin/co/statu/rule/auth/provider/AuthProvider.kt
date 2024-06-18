@@ -185,7 +185,7 @@ class AuthProvider private constructor(
 
         val (token, expireDate) = tokenProvider.generateToken(userId.toString(), authenticationToken)
 
-        tokenProvider.saveToken(token, userId.toString(), authenticationToken, expireDate, jdbcPool)
+        tokenProvider.saveToken(token, userId.toString(), authenticationToken, expireDate, jdbcPool = jdbcPool)
 
         val csrfToken = CsrfTokenGenerator.nextToken()
 

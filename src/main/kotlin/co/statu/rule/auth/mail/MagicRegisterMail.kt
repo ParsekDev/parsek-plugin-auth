@@ -41,7 +41,7 @@ class MagicRegisterMail(private val pluginConfigManager: PluginConfigManager<Aut
             email,
             magicRegisterToken,
             magicRegisterToken.getExpireDateFromNow(),
-            jdbcPool
+            jdbcPool = jdbcPool
         )
 
         val signature = SecurityUtil.encodeSha256HMAC(secretKey, email + formattedCode)

@@ -45,7 +45,7 @@ class ConfirmDeleteAccountMail(private val pluginConfigManager: PluginConfigMana
             userId.toString(),
             confirmDeleteAccountToken,
             confirmDeleteAccountToken.getExpireDateFromNow(),
-            jdbcPool
+            jdbcPool = jdbcPool
         )
 
         val signature = SecurityUtil.encodeSha256HMAC(secretKey, email + formattedCode)

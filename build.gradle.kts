@@ -33,7 +33,7 @@ dependencies {
     } else {
         compileOnly("com.github.StatuParsek:Parsek:main-SNAPSHOT")
         compileOnly("com.github.StatuParsek:parsek-plugin-database:main-SNAPSHOT")
-        compileOnly("com.github.StatuParsek:parsek-plugin-token:v1.2.0")
+        compileOnly("com.github.StatuParsek:parsek-plugin-token:v1.3.0")
         compileOnly("com.github.StatuParsek:parsek-plugin-mail:main-SNAPSHOT")
         compileOnly("com.github.StatuParsek:parsek-plugin-system-property:main-SNAPSHOT")
     }
