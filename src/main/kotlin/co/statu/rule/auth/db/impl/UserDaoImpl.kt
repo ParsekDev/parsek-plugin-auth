@@ -28,7 +28,7 @@ class UserDaoImpl : UserDao() {
                             `lastActivityTime` Int64 DEFAULT 0,
                             `lastPanelActivityTime` Int64 DEFAULT 0,
                             `active` Bool DEFAULT true,
-                            `additionalFields` Bool DEFAULT '{}'
+                            `additionalFields` String DEFAULT '{}'
                         ) ENGINE = MergeTree() order by `registerDate`;
             """
             )
