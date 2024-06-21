@@ -174,7 +174,7 @@ class VerifyMagicLinkAPI(
             throw InvalidCode()
         }
 
-        tokenProvider.invalidateToken(magicCode)
+        tokenProvider.invalidateByTokenId(loginToken.id, jdbcPool)
 
         authProvider.authenticate(email)
 
