@@ -12,14 +12,12 @@ import co.statu.rule.auth.error.InvalidEmail
 import co.statu.rule.auth.error.InvalidSignature
 import co.statu.rule.auth.error.InvalidSignatureOrRecaptcha
 import co.statu.rule.auth.provider.AuthProvider
-import co.statu.rule.auth.token.MagicChangeEmailToken
-import co.statu.rule.auth.token.MagicLoginToken
-import co.statu.rule.auth.token.MagicRegisterToken
-import co.statu.rule.auth.token.RegisterToken
+import co.statu.rule.auth.token.*
 import co.statu.rule.auth.util.SecurityUtil
 import co.statu.rule.database.DatabaseManager
 import co.statu.rule.token.db.dao.TokenDao
 import co.statu.rule.token.db.impl.TokenDaoImpl
+import co.statu.rule.token.db.model.Token
 import co.statu.rule.token.provider.TokenProvider
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.validation.RequestPredicate
@@ -79,6 +77,8 @@ class VerifyMagicLinkAPI(
 
     private val magicLoginToken = MagicLoginToken()
 
+    private val authenticationToken = AuthenticationToken()
+
     override suspend fun handle(context: RoutingContext): Result {
         val parameters = getParameters(context)
         val data = parameters.body().jsonObject
@@ -88,6 +88,27 @@ class VerifyMagicLinkAPI(
         val recaptcha = data.getString("recaptcha")
         val signature = data.getString("signature")
 
+        validateInput(magicCode, email, recaptcha, signature)
+
+        val jdbcPool = databaseManager.getConnectionPool()
+
+        val changeEmailToken = tokenDao.getByTokenSubjectAndType(magicCode, email, magicChangeEmailToken, jdbcPool)
+
+        if (changeEmailToken != null) {
+            return handleChangeEmail(context, email, changeEmailToken)
+        }
+
+        val registerToken =
+            tokenDao.getByTokenSubjectAndType(magicCode, email, magicRegisterToken, jdbcPool)
+
+        if (registerToken != null) {
+            return handleRegister(email, registerToken)
+        }
+
+        return handleLogin(context, magicCode, email)
+    }
+
+    private fun validateInput(magicCode: String, email: String, recaptcha: String?, signature: String?) {
         if (magicCode.isBlank()) {
             throw InvalidCode()
         }
@@ -111,55 +132,74 @@ class VerifyMagicLinkAPI(
         if (!signature.isNullOrBlank() && signature != SecurityUtil.encodeSha256HMAC(secretKey, email + magicCode)) {
             throw InvalidSignature()
         }
+    }
 
+    private suspend fun handleChangeEmail(context: RoutingContext, email: String, changeEmailToken: Token): Result {
         val jdbcPool = databaseManager.getConnectionPool()
 
-        val changeEmailToken = tokenDao.getByTokenSubjectAndType(magicCode, email, magicChangeEmailToken, jdbcPool)
+        val userId = UUID.fromString(changeEmailToken.additionalClaims.getString("userId"))
+        val user = userDao.getById(userId, jdbcPool)!!
 
-        if (changeEmailToken != null) {
-            val userId = UUID.fromString(changeEmailToken.additionalClaims.getString("userId"))
-            val user = userDao.getById(userId, jdbcPool)!!
+        tokenProvider.invalidateByTokenId(changeEmailToken.id, jdbcPool)
 
-            tokenProvider.invalidateTokensBySubjectAndType(user.email, magicLoginToken, jdbcPool)
-            tokenProvider.invalidateTokensBySubjectAndType(email, magicChangeEmailToken, jdbcPool)
+        tokenDao.deleteBySubject(email, jdbcPool)
+        tokenDao.deleteBySubject(user.email, jdbcPool)
 
-            user.email = email
+        tokenProvider.invalidateTokensBySubjectAndType(user.id.toString(), authenticationToken, jdbcPool)
 
-            userDao.update(user, jdbcPool)
+        user.email = email
 
-            return Successful(
-                mapOf(
-                    "magicLinkType" to MagicLinkType.CHANGE_EMAIl
-                )
-            )
+        userDao.update(user, jdbcPool)
+
+        authProvider.authenticate(email)
+
+        val (authToken, csrfToken) = authProvider.login(email, jdbcPool)
+
+        userDao.updateLastLoginDate(userId, jdbcPool)
+
+        val cookieSet = authProvider.setCookies(context, authToken, csrfToken)
+
+        val response = mutableMapOf<String, Any>(
+            "magicLinkType" to MagicLinkType.CHANGE_EMAIl
+        )
+
+        if (cookieSet) {
+            response["csrfToken"] = csrfToken
         }
 
-        val registerToken =
-            tokenDao.getByTokenSubjectAndType(magicCode, email, magicRegisterToken, jdbcPool)
+        response["jwtToken"] = authToken
 
-        if (registerToken != null) {
-            tokenProvider.invalidateTokensBySubjectAndType(email, magicRegisterToken, jdbcPool)
+        return Successful(response)
+    }
 
-            if (registerToken.expireDate < System.currentTimeMillis()) {
-                throw InvalidCode()
-            }
+    private suspend fun handleRegister(email: String, registerToken: Token): Result {
+        val jdbcPool = databaseManager.getConnectionPool()
 
-            val (token, expireDate) = tokenProvider.generateToken(
-                email,
-                registerTokenObject,
-                mapOf("email" to email)
-            )
+        tokenProvider.invalidateTokensBySubjectAndType(email, magicRegisterToken, jdbcPool)
 
-            tokenProvider.saveToken(token, email, registerTokenObject, expireDate, jdbcPool = jdbcPool)
-
-            return Successful(
-                mapOf(
-                    "email" to email,
-                    "jwtToken" to token,
-                    "magicLinkType" to MagicLinkType.REGISTER
-                )
-            )
+        if (registerToken.expireDate < System.currentTimeMillis()) {
+            throw InvalidCode()
         }
+
+        val (token, expireDate) = tokenProvider.generateToken(
+            email,
+            registerTokenObject,
+            mapOf("email" to email)
+        )
+
+        tokenProvider.saveToken(token, email, registerTokenObject, expireDate, jdbcPool = jdbcPool)
+
+        return Successful(
+            mapOf(
+                "email" to email,
+                "jwtToken" to token,
+                "magicLinkType" to MagicLinkType.REGISTER
+            )
+        )
+    }
+
+    private suspend fun handleLogin(context: RoutingContext, magicCode: String, email: String): Result {
+        val jdbcPool = databaseManager.getConnectionPool()
 
         val userId = userDao.getUserIdFromEmail(email, jdbcPool) ?: throw InvalidCode()
 
