@@ -2,7 +2,10 @@ package co.statu.rule.auth.route.profile
 
 import co.statu.parsek.annotation.Endpoint
 import co.statu.parsek.api.config.PluginConfigManager
-import co.statu.parsek.model.*
+import co.statu.parsek.model.Path
+import co.statu.parsek.model.Result
+import co.statu.parsek.model.RouteType
+import co.statu.parsek.model.Successful
 import co.statu.rule.auth.AuthConfig
 import co.statu.rule.auth.AuthFieldManager
 import co.statu.rule.auth.AuthPlugin
@@ -84,7 +87,7 @@ class UpdateProfileAPI(
             val emailExists = userDao.isEmailExists(email, jdbcPool)
 
             if (emailExists) {
-                throw Errors(mapOf("email" to EmailNotAvailable()))
+                throw EmailNotAvailable()
             }
 
             sendChangeEmailLink(user.id, email)
