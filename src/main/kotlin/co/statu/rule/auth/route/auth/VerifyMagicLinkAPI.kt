@@ -160,7 +160,7 @@ class VerifyMagicLinkAPI(
         val cookieSet = authProvider.setCookies(context, authToken, csrfToken)
 
         val response = mutableMapOf<String, Any>(
-            "magicLinkType" to MagicLinkType.CHANGE_EMAIl
+            "magicLinkType" to MagicLinkType.CHANGE_EMAIL
         )
 
         if (cookieSet) {
@@ -238,6 +238,6 @@ class VerifyMagicLinkAPI(
     }
 
     enum class MagicLinkType {
-        REGISTER, LOGIN, CHANGE_EMAIl
+        REGISTER, LOGIN, CHANGE_EMAIL
     }
 }
