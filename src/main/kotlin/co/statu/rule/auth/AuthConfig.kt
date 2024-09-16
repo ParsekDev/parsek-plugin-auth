@@ -11,7 +11,8 @@ class AuthConfig(
     val invitationConfig: InvitationConfig = InvitationConfig(),
     val tempMailCheckConfig: TempMailCheckConfig = TempMailCheckConfig(),
     val registerFields: List<RegisterField> = listOf(),
-    val resendCodeTime: Long? = 0
+    val resendCodeTime: Long? = 0,
+    val loginConfig: LoginConfig = LoginConfig()
 ) : PluginConfig() {
     companion object {
         data class RecaptchaConfig(
@@ -61,5 +62,9 @@ class AuthConfig(
                 }
             }
         }
+
+        data class LoginConfig(
+            val singleSession: Boolean = false
+        )
     }
 }
