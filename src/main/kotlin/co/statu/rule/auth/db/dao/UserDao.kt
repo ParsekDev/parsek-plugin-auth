@@ -33,11 +33,11 @@ abstract class UserDao : Dao<User>(User::class) {
         jdbcPool: JDBCPool
     ): Boolean
 
-    abstract suspend fun getEmailsByPermissionGroupId(
+    abstract suspend fun getByPermissionGroupId(
         permissionGroupId: UUID,
         limit: Long,
         jdbcPool: JDBCPool
-    ): List<String>
+    ): List<User>
 
     abstract suspend fun getPermissionGroupNameById(
         userId: UUID,

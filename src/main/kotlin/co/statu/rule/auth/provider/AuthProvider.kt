@@ -421,10 +421,10 @@ class AuthProvider private constructor(
         tokenProvider.invalidateToken(token)
     }
 
-    suspend fun getAdminList(jdbcPool: JDBCPool): List<String> {
+    suspend fun getAdminList(jdbcPool: JDBCPool): List<User> {
         val adminPermissionId = permissionGroupDao.getPermissionGroupIdByName("admin", jdbcPool)!!
 
-        val admins = userDao.getEmailsByPermissionGroupId(adminPermissionId, -1, jdbcPool)
+        val admins = userDao.getByPermissionGroupId(adminPermissionId, -1, jdbcPool)
 
         return admins
     }

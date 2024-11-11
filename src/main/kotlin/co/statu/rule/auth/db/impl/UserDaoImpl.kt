@@ -150,26 +150,20 @@ class UserDaoImpl : UserDao() {
         return rows.toList()[0].getLong(0) == 1L
     }
 
-    override suspend fun getEmailsByPermissionGroupId(
+    override suspend fun getByPermissionGroupId(
         permissionGroupId: UUID,
         limit: Long,
         jdbcPool: JDBCPool
-    ): List<String> {
+    ): List<User> {
         val query =
-            "SELECT `email` FROM `${getTablePrefix() + tableName}` WHERE `permissionGroupId` = ? ${if (limit == -1L) "" else "LIMIT $limit"}"
+            "SELECT ${fields.toTableQuery()}  FROM `${getTablePrefix() + tableName}` WHERE `permissionGroupId` = ? ${if (limit == -1L) "" else "LIMIT $limit"}"
 
         val rows: RowSet<Row> = jdbcPool
             .preparedQuery(query)
             .execute(Tuple.of(permissionGroupId))
             .await()
 
-        val listOfEmails = mutableListOf<String>()
-
-        rows.forEach { row ->
-            listOfEmails.add(row.getString(0))
-        }
-
-        return listOfEmails
+        return rows.toEntities()
     }
 
     override suspend fun getPermissionGroupNameById(userId: UUID, jdbcPool: JDBCPool): String? {
