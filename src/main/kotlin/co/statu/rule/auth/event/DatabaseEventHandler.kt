@@ -8,7 +8,6 @@ import co.statu.rule.database.event.DatabaseEventListener
 @EventListener
 class DatabaseEventHandler(private val authPlugin: AuthPlugin) : DatabaseEventListener {
     override suspend fun onReady(databaseManager: DatabaseManager) {
-        databaseManager.migrateNewPluginId("auth", authPlugin.pluginId, authPlugin)
         databaseManager.initialize(authPlugin, authPlugin)
 
         AuthPlugin.databaseManager = databaseManager

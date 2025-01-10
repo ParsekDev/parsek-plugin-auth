@@ -1,13 +1,11 @@
 package co.statu.rule.auth.config.migration
 
+import co.statu.parsek.annotation.Migration
 import co.statu.parsek.api.config.PluginConfigMigration
 import io.vertx.core.json.JsonObject
 
-class ConfigMigration7to8(
-    override val FROM_VERSION: Int = 7,
-    override val VERSION: Int = 8,
-    override val VERSION_INFO: String = "Add secure flag to cookie config"
-) : PluginConfigMigration() {
+@Migration
+class ConfigMigration7to8 : PluginConfigMigration(7, 8, "Add secure flag to cookie config") {
     override fun migrate(config: JsonObject) {
         val cookieConfig = config.getJsonObject("cookieConfig")
 

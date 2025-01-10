@@ -9,7 +9,6 @@ import co.statu.rule.auth.AuthConfig
 import co.statu.rule.auth.AuthFieldManager
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.InvitationCodeSystem
-import co.statu.rule.auth.config.migration.*
 import co.statu.rule.auth.provider.AuthProvider
 import org.slf4j.Logger
 
@@ -32,21 +31,8 @@ class CoreEventHandler(
 
     override suspend fun onConfigManagerReady(configManager: ConfigManager) {
         val pluginConfigManager = PluginConfigManager(
-            configManager,
             authPlugin,
-            AuthConfig::class.java,
-            listOf(
-                ConfigMigration1to2(),
-                ConfigMigration2to3(),
-                ConfigMigration3to4(),
-                ConfigMigration4to5(),
-                ConfigMigration5to6(),
-                ConfigMigration6to7(),
-                ConfigMigration7to8(),
-                ConfigMigration8to9(),
-                ConfigMigration9to10()
-            ),
-            listOf("auth")
+            AuthConfig::class.java
         )
 
         authPlugin.pluginBeanContext.beanFactory.registerSingleton(

@@ -1,13 +1,11 @@
 package co.statu.rule.auth.config.migration
 
+import co.statu.parsek.annotation.Migration
 import co.statu.parsek.api.config.PluginConfigMigration
 import io.vertx.core.json.JsonObject
 
-class ConfigMigration9to10(
-    override val FROM_VERSION: Int = 9,
-    override val VERSION: Int = 10,
-    override val VERSION_INFO: String = "Add login config"
-) : PluginConfigMigration() {
+@Migration
+class ConfigMigration9to10 : PluginConfigMigration(9, 10, "Add login config") {
     override fun migrate(config: JsonObject) {
         val loginConfig = JsonObject()
 

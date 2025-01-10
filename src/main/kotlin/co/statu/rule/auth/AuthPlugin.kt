@@ -21,7 +21,7 @@ class AuthPlugin : ParsekPlugin(), DatabaseHelper {
         lateinit var databaseManager: DatabaseManager
     }
 
-    override suspend fun onLoad() {
+    override suspend fun onCreate() {
         val webclient = WebClient.create(vertx, WebClientOptions())
 
         pluginBeanContext.beanFactory.registerSingleton(webclient.javaClass.name, webclient)
