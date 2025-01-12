@@ -51,7 +51,7 @@ dependencies {
     compileOnly("io.vertx:vertx-jdbc-client:$vertxVersion")
     compileOnly("io.vertx:vertx-json-schema:$vertxVersion")
     compileOnly("io.vertx:vertx-web-validation:$vertxVersion")
-    compileOnly("io.vertx:vertx-web-client:$vertxVersion")
+    implementation("io.vertx:vertx-web-client:$vertxVersion")
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     compileOnly("com.google.code.gson:gson:$gsonVersion")
