@@ -483,9 +483,15 @@ class AuthProvider private constructor(
     suspend fun deleteUser(userId: UUID) {
         val jdbcPool = databaseManager.getConnectionPool()
 
-        tokenDao.deleteBySubject(userId.toString(), jdbcPool)
-
         val user = userDao.getById(userId, jdbcPool)!!
+
+        val authEventHandlers = PluginEventManager.getEventListeners<AuthEventListener>()
+
+        authEventHandlers.forEach { authEventHandler ->
+            authEventHandler.onDeleteUser(user)
+        }
+
+        tokenDao.deleteBySubject(userId.toString(), jdbcPool)
 
         val deletedUserTime = System.currentTimeMillis()
 

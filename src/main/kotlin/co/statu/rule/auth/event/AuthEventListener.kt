@@ -22,4 +22,6 @@ interface AuthEventListener : PluginEventListener {
         authFieldManager: AuthFieldManager
     ) {
     }
+
+    suspend fun onDeleteUser(user: User) {}
 }
