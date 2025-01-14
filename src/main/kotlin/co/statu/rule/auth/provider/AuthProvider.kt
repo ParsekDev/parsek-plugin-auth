@@ -20,6 +20,8 @@ import co.statu.rule.database.DatabaseManager
 import co.statu.rule.systemProperty.db.dao.SystemPropertyDao
 import co.statu.rule.systemProperty.db.impl.SystemPropertyDaoImpl
 import co.statu.rule.systemProperty.db.model.SystemProperty
+import co.statu.rule.token.db.dao.TokenDao
+import co.statu.rule.token.db.impl.TokenDaoImpl
 import co.statu.rule.token.provider.TokenProvider
 import io.vertx.core.http.Cookie
 import io.vertx.core.http.CookieSameSite
@@ -75,6 +77,8 @@ class AuthProvider private constructor(
     private val permissionGroupDao: PermissionGroupDao = PermissionGroupDaoImpl()
 
     private val systemPropertyDao: SystemPropertyDao = SystemPropertyDaoImpl()
+
+    private val tokenDao: TokenDao = TokenDaoImpl()
 
     private val authenticationToken = AuthenticationToken()
 
@@ -474,5 +478,22 @@ class AuthProvider private constructor(
         val jdbcPool = databaseManager.getConnectionPool()
 
         return userDao.byId(userId, jdbcPool)
+    }
+
+    suspend fun deleteUser(userId: UUID) {
+        val jdbcPool = databaseManager.getConnectionPool()
+
+        tokenDao.deleteBySubject(userId.toString(), jdbcPool)
+
+        val user = userDao.getById(userId, jdbcPool)!!
+
+        val deletedUserTime = System.currentTimeMillis()
+
+        user.email = "deleted-account-${deletedUserTime}@parsek.backend"
+        user.active = false
+
+        user.additionalFields = JsonObject()
+
+        userDao.update(user, jdbcPool)
     }
 }
