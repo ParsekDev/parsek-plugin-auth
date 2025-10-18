@@ -124,6 +124,14 @@ jobs:
       - name: Verify downloaded artifacts
         run: ls -R build/libs
 
+      - name: Publish to Maven Central with JReleaser
+        run: |
+          ./gradlew -Pversion=${{ needs.get-next-version.outputs.new_tag_version }} publish
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+
       - name: Deploy to Maven Central with JReleaser
         id: jreleaser
         run: |
