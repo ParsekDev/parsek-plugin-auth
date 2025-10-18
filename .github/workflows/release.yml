@@ -78,11 +78,6 @@ jobs:
         with:
           node-version: "lts/*"
 
-      - name: Install deps for semantic-release
-        run: |
-          npm ci
-        # Eğer package.json yoksa bu adımı kaldırabilirsiniz
-
       - name: Create GitHub Release with semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
