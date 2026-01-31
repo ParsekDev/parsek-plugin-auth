@@ -4,14 +4,15 @@ import co.statu.parsek.api.ParsekPlugin
 import co.statu.rule.auth.db.dao.InvitationCodeDao
 import co.statu.rule.auth.db.model.InvitationCode
 import io.vertx.jdbcclient.JDBCPool
-import io.vertx.kotlin.coroutines.await
+import io.vertx.sqlclient.Pool
+import io.vertx.kotlin.coroutines.*
 import io.vertx.sqlclient.Row
 import io.vertx.sqlclient.RowSet
 import io.vertx.sqlclient.Tuple
 import java.util.*
 
 class InvitationCodeDaoImpl : InvitationCodeDao() {
-    override suspend fun init(jdbcPool: JDBCPool, plugin: ParsekPlugin) {
+    override suspend fun init(jdbcPool: Pool, plugin: ParsekPlugin) {
         jdbcPool
             .query(
                 """
@@ -27,12 +28,12 @@ class InvitationCodeDaoImpl : InvitationCodeDao() {
                         """
             )
             .execute()
-            .await()
+            .coAwait()
     }
 
     override suspend fun add(
         invitationCode: InvitationCode,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): UUID {
         val query =
             "INSERT INTO `${getTablePrefix() + tableName}` (${fields.toTableQuery()}) " +
@@ -51,12 +52,12 @@ class InvitationCodeDaoImpl : InvitationCodeDao() {
                     invitationCode.updatedAt
                 )
             )
-            .await()
+            .coAwait()
 
         return invitationCode.id
     }
 
-    override suspend fun addAll(invitationCodes: List<InvitationCode>, jdbcPool: JDBCPool): List<UUID> {
+    override suspend fun addAll(invitationCodes: List<InvitationCode>, jdbcPool: Pool): List<UUID> {
         if (invitationCodes.isEmpty()) {
             return listOf()
         }
@@ -82,14 +83,14 @@ class InvitationCodeDaoImpl : InvitationCodeDao() {
         jdbcPool
             .preparedQuery(query)
             .executeBatch(batchTuple)
-            .await()
+            .coAwait()
 
         return invitationCodes.map { it.id }
     }
 
     override suspend fun byCode(
         code: String,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): InvitationCode? {
         val query =
             "SELECT ${fields.toTableQuery()} FROM `${getTablePrefix() + tableName}` WHERE `code` = ?"
@@ -97,7 +98,7 @@ class InvitationCodeDaoImpl : InvitationCodeDao() {
         val rows: RowSet<Row> = jdbcPool
             .preparedQuery(query)
             .execute(Tuple.of(code))
-            .await()
+            .coAwait()
 
         if (rows.size() == 0) {
             return null
@@ -108,7 +109,7 @@ class InvitationCodeDaoImpl : InvitationCodeDao() {
         return row.toEntity()
     }
 
-    override suspend fun update(invitationCode: InvitationCode, jdbcPool: JDBCPool) {
+    override suspend fun update(invitationCode: InvitationCode, jdbcPool: Pool) {
         val query =
             "UPDATE `${getTablePrefix() + tableName}` SET `usedByEmails` = ?, `updatedAt` = ? WHERE `id` = ?"
 
@@ -123,6 +124,6 @@ class InvitationCodeDaoImpl : InvitationCodeDao() {
         jdbcPool
             .preparedQuery(query)
             .execute(parameters)
-            .await()
+            .coAwait()
     }
 }

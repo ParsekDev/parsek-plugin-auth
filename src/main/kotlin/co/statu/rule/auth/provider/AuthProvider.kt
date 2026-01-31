@@ -29,7 +29,8 @@ import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.client.WebClient
 import io.vertx.jdbcclient.JDBCPool
-import io.vertx.kotlin.ext.web.client.sendAwait
+import io.vertx.sqlclient.Pool
+import io.vertx.kotlin.coroutines.*
 import org.apache.commons.validator.routines.EmailValidator
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
@@ -123,7 +124,7 @@ class AuthProvider private constructor(
         data: JsonObject,
         remoteIP: String,
         isAdmin: Boolean = false,
-        jdbcPool: JDBCPool,
+        jdbcPool: Pool,
     ): UUID {
         val additionalFields = authFieldManager.getAdditionalFields(data)
 
@@ -181,7 +182,7 @@ class AuthProvider private constructor(
     }
 
     suspend fun login(
-        email: String, jdbcPool: JDBCPool
+        email: String, jdbcPool: Pool
     ): Pair<String, String> {
         val userId = userDao.getUserIdFromEmail(
             email, jdbcPool
@@ -270,7 +271,7 @@ class AuthProvider private constructor(
         val config = pluginConfigManager.config
 
         if (!config.whitelistUrl.isNullOrBlank()) {
-            val response = webClient.getAbs(config.whitelistUrl).sendAwait()
+            val response = webClient.getAbs(config.whitelistUrl).send().coAwait()
 
             val bodyAsJsonObject = response.bodyAsJsonObject()
 
@@ -292,7 +293,7 @@ class AuthProvider private constructor(
 
         try {
             val response = webClient.getAbs("https://disposable.debounce.io/")
-                .addQueryParam("email", StringUtil.anonymizeEmail(email)).sendAwait()
+                .addQueryParam("email", StringUtil.anonymizeEmail(email)).send().coAwait()
 
             if (response.statusCode() != 200 && response.statusCode() != 201) {
                 return
@@ -425,7 +426,7 @@ class AuthProvider private constructor(
         tokenProvider.invalidateToken(token)
     }
 
-    suspend fun getAdminList(jdbcPool: JDBCPool): List<User> {
+    suspend fun getAdminList(jdbcPool: Pool): List<User> {
         val adminPermissionId = permissionGroupDao.getPermissionGroupIdByName("admin", jdbcPool)!!
 
         val admins = userDao.getByPermissionGroupId(adminPermissionId, -1, jdbcPool)

@@ -6,7 +6,8 @@ import co.statu.rule.auth.db.model.Permission
 import co.statu.rule.auth.db.model.User
 import co.statu.rule.database.DBEntity.Companion.from
 import io.vertx.jdbcclient.JDBCPool
-import io.vertx.kotlin.coroutines.await
+import io.vertx.sqlclient.Pool
+import io.vertx.kotlin.coroutines.*
 import io.vertx.sqlclient.Row
 import io.vertx.sqlclient.RowSet
 import io.vertx.sqlclient.Tuple
@@ -14,7 +15,7 @@ import java.util.*
 
 class UserDaoImpl : UserDao() {
 
-    override suspend fun init(jdbcPool: JDBCPool, plugin: ParsekPlugin) {
+    override suspend fun init(jdbcPool: Pool, plugin: ParsekPlugin) {
         jdbcPool
             .query(
                 """
@@ -33,12 +34,12 @@ class UserDaoImpl : UserDao() {
             """
             )
             .execute()
-            .await()
+            .coAwait()
     }
 
     override suspend fun add(
         user: User,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): UUID {
         val query =
             "INSERT INTO `${getTablePrefix() + tableName}` (${fields.toTableQuery()}) " +
@@ -60,14 +61,14 @@ class UserDaoImpl : UserDao() {
                     user.additionalFields.encode(),
                 )
             )
-            .await()
+            .coAwait()
 
         return user.id
     }
 
     override suspend fun isEmailExists(
         email: String,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): Boolean {
         val query =
             "SELECT COUNT(`email`) FROM `${getTablePrefix() + tableName}` where `email` = ?"
@@ -79,7 +80,7 @@ class UserDaoImpl : UserDao() {
                     email
                 )
             )
-            .await()
+            .coAwait()
 
         return rows.toList()[0].getLong(0) == 1L
     }
@@ -87,7 +88,7 @@ class UserDaoImpl : UserDao() {
     override suspend fun isAdditionalFieldUnique(
         additionalField: String,
         value: String,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): Boolean {
         val query = """
             SELECT field, count(*) AS occurrences
@@ -109,14 +110,14 @@ class UserDaoImpl : UserDao() {
                     value
                 )
             )
-            .await()
+            .coAwait()
 
         return rows.toList().getOrNull(0) == null || rows.toList()[0].size() == 0
     }
 
     override suspend fun getUserIdFromEmail(
         email: String,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): UUID? {
         val query =
             "SELECT `id` FROM `${getTablePrefix() + tableName}` where `email` = ?"
@@ -124,7 +125,7 @@ class UserDaoImpl : UserDao() {
         val rows: RowSet<Row> = jdbcPool
             .preparedQuery(query)
             .execute(Tuple.of(email))
-            .await()
+            .coAwait()
 
         if (rows.size() == 0) {
             return null
@@ -133,7 +134,7 @@ class UserDaoImpl : UserDao() {
         return rows.toList()[0].getUUID(0)
     }
 
-    override suspend fun isActive(userId: UUID, jdbcPool: JDBCPool): Boolean {
+    override suspend fun isActive(userId: UUID, jdbcPool: Pool): Boolean {
         val query =
             "SELECT COUNT(`email`) FROM `${getTablePrefix() + tableName}` WHERE `id` = ? and `active` = ?"
 
@@ -145,7 +146,7 @@ class UserDaoImpl : UserDao() {
                     true
                 )
             )
-            .await()
+            .coAwait()
 
         return rows.toList()[0].getLong(0) == 1L
     }
@@ -153,7 +154,7 @@ class UserDaoImpl : UserDao() {
     override suspend fun getByPermissionGroupId(
         permissionGroupId: UUID,
         limit: Long,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): List<User> {
         val query =
             "SELECT ${fields.toTableQuery()}  FROM `${getTablePrefix() + tableName}` WHERE `permissionGroupId` = ? ${if (limit == -1L) "" else "LIMIT $limit"}"
@@ -161,12 +162,12 @@ class UserDaoImpl : UserDao() {
         val rows: RowSet<Row> = jdbcPool
             .preparedQuery(query)
             .execute(Tuple.of(permissionGroupId))
-            .await()
+            .coAwait()
 
         return rows.toEntities()
     }
 
-    override suspend fun getPermissionGroupNameById(userId: UUID, jdbcPool: JDBCPool): String? {
+    override suspend fun getPermissionGroupNameById(userId: UUID, jdbcPool: Pool): String? {
         val query = """SELECT p_group.name
                     FROM `${getTablePrefix() + tableName}` u
                     JOIN `${getTablePrefix()}permission_group` p_group ON u.permissionGroupId = p_group.id
@@ -177,7 +178,7 @@ class UserDaoImpl : UserDao() {
             .execute(
                 Tuple.of(userId)
             )
-            .await()
+            .coAwait()
 
         if (rows.size() == 0) {
             return null
@@ -186,7 +187,7 @@ class UserDaoImpl : UserDao() {
         return rows.toList()[0].getString(0)
     }
 
-    override suspend fun getPermissionsById(userId: UUID, jdbcPool: JDBCPool): List<Permission> {
+    override suspend fun getPermissionsById(userId: UUID, jdbcPool: Pool): List<Permission> {
         val query = """SELECT p.id, p.name
                     FROM `${getTablePrefix() + tableName}` u
                     JOIN `${getTablePrefix()}permission_group` p_group ON u.permissionGroupId = p_group.id
@@ -199,12 +200,12 @@ class UserDaoImpl : UserDao() {
             .execute(
                 Tuple.of(userId)
             )
-            .await()
+            .coAwait()
 
         return Permission::class.from(rows)
     }
 
-    override suspend fun updateLastActivityTime(userId: UUID, jdbcPool: JDBCPool) {
+    override suspend fun updateLastActivityTime(userId: UUID, jdbcPool: Pool) {
         val query =
             "UPDATE `${getTablePrefix() + tableName}` SET `lastActivityTime` = ? WHERE `id` = ?"
 
@@ -216,10 +217,10 @@ class UserDaoImpl : UserDao() {
                     userId
                 )
             )
-            .await()
+            .coAwait()
     }
 
-    override suspend fun updateLastPanelActivityTime(userId: UUID, jdbcPool: JDBCPool) {
+    override suspend fun updateLastPanelActivityTime(userId: UUID, jdbcPool: Pool) {
         val query =
             "UPDATE `${getTablePrefix() + tableName}` SET `lastPanelActivityTime` = ? WHERE `id` = ?"
 
@@ -231,12 +232,12 @@ class UserDaoImpl : UserDao() {
                     userId
                 )
             )
-            .await()
+            .coAwait()
     }
 
     override suspend fun getById(
         userId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): User? {
         val query =
             "SELECT ${fields.toTableQuery()} FROM `${getTablePrefix() + tableName}` where `id` = ?"
@@ -244,7 +245,7 @@ class UserDaoImpl : UserDao() {
         val rows: RowSet<Row> = jdbcPool
             .preparedQuery(query)
             .execute(Tuple.of(userId))
-            .await()
+            .coAwait()
 
         if (rows.size() == 0) {
             return null
@@ -255,7 +256,7 @@ class UserDaoImpl : UserDao() {
         return row.toEntity()
     }
 
-    override suspend fun updateLastLoginDate(userId: UUID, jdbcPool: JDBCPool) {
+    override suspend fun updateLastLoginDate(userId: UUID, jdbcPool: Pool) {
         val query =
             "UPDATE `${getTablePrefix() + tableName}` SET `lastLoginDate` = ? WHERE `id` = ?"
 
@@ -267,17 +268,17 @@ class UserDaoImpl : UserDao() {
                     userId
                 )
             )
-            .await()
+            .coAwait()
     }
 
-    override suspend fun getEmailFromUserId(userId: UUID, jdbcPool: JDBCPool): String? {
+    override suspend fun getEmailFromUserId(userId: UUID, jdbcPool: Pool): String? {
         val query =
             "SELECT `email` FROM `${getTablePrefix() + tableName}` where `id` = ?"
 
         val rows: RowSet<Row> = jdbcPool
             .preparedQuery(query)
             .execute(Tuple.of(userId))
-            .await()
+            .coAwait()
 
         if (rows.size() == 0) {
             return null
@@ -286,7 +287,7 @@ class UserDaoImpl : UserDao() {
         return rows.toList()[0].getString(0)
     }
 
-    override suspend fun update(user: User, jdbcPool: JDBCPool) {
+    override suspend fun update(user: User, jdbcPool: Pool) {
         val query =
             "UPDATE `${getTablePrefix() + tableName}` SET `email` = ?, `permissionGroupId` = ?, `active` = ?, `additionalFields` = ? WHERE `id` = ?"
 
@@ -302,6 +303,6 @@ class UserDaoImpl : UserDao() {
         jdbcPool
             .preparedQuery(query)
             .execute(parameters)
-            .await()
+            .coAwait()
     }
 }

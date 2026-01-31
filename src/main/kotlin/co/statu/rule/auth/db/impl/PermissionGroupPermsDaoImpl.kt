@@ -4,14 +4,15 @@ import co.statu.parsek.api.ParsekPlugin
 import co.statu.rule.auth.db.dao.PermissionGroupPermsDao
 import co.statu.rule.auth.db.model.PermissionGroupPerms
 import io.vertx.jdbcclient.JDBCPool
-import io.vertx.kotlin.coroutines.await
+import io.vertx.sqlclient.Pool
+import io.vertx.kotlin.coroutines.*
 import io.vertx.sqlclient.Row
 import io.vertx.sqlclient.RowSet
 import io.vertx.sqlclient.Tuple
 import java.util.*
 
 class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
-    override suspend fun init(jdbcPool: JDBCPool, plugin: ParsekPlugin) {
+    override suspend fun init(jdbcPool: Pool, plugin: ParsekPlugin) {
         jdbcPool
             .query(
                 """
@@ -23,11 +24,11 @@ class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
                         """
             )
             .execute()
-            .await()
+            .coAwait()
     }
 
     override suspend fun getPermissionGroupPerms(
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): List<PermissionGroupPerms> {
         val query =
             "SELECT `id`, `permissionId`, `permissionGroupId` FROM `${getTablePrefix() + tableName}`"
@@ -35,14 +36,14 @@ class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
         val rows: RowSet<Row> = jdbcPool
             .preparedQuery(query)
             .execute()
-            .await()
+            .coAwait()
 
         return rows.toEntities()
     }
 
     override suspend fun getPermissionGroupPermsByPermissionId(
         permissionId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): List<PermissionGroupPerms> {
         val query =
             "SELECT `id`, `permissionId`, `permissionGroupId` FROM `${getTablePrefix() + tableName}` WHERE `permissionId` = ?"
@@ -50,7 +51,7 @@ class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
         val rows: RowSet<Row> = jdbcPool
             .preparedQuery(query)
             .execute(Tuple.of(permissionId))
-            .await()
+            .coAwait()
 
         return rows.toEntities()
     }
@@ -58,7 +59,7 @@ class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
     override suspend fun doesPermissionGroupHavePermission(
         permissionGroupId: UUID,
         permissionId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): Boolean {
         val query =
             "SELECT COUNT(`id`) FROM `${getTablePrefix() + tableName}` WHERE `permissionGroupId` = ? AND  `permissionId` = ?"
@@ -70,7 +71,7 @@ class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
                     permissionGroupId,
                     permissionId
                 )
-            ).await()
+            ).coAwait()
 
         return rows.toList()[0].getLong(0) != 0L
     }
@@ -78,7 +79,7 @@ class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
     override suspend fun addPermission(
         permissionGroupId: UUID,
         permissionId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ) {
         val query =
             "INSERT INTO `${getTablePrefix() + tableName}` (`id`, `permissionId`, `permissionGroupId`) VALUES (generateUUIDv4(), ?, ?)"
@@ -90,13 +91,13 @@ class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
                     permissionId,
                     permissionGroupId
                 )
-            ).await()
+            ).coAwait()
     }
 
     override suspend fun removePermission(
         permissionGroupId: UUID,
         permissionId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ) {
         val query =
             "DELETE FROM `${getTablePrefix() + tableName}` WHERE `permissionGroupId` = ? AND `permissionId` = ?"
@@ -108,12 +109,12 @@ class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
                     permissionGroupId,
                     permissionId
                 )
-            ).await()
+            ).coAwait()
     }
 
     override suspend fun removePermissionGroup(
         permissionGroupId: UUID,
-        jdbcPool: JDBCPool,
+        jdbcPool: Pool,
     ) {
         val query =
             "DELETE FROM `${getTablePrefix() + tableName}` WHERE `permissionGroupId` = ?"
@@ -124,6 +125,6 @@ class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
                 Tuple.of(
                     permissionGroupId
                 )
-            ).await()
+            ).coAwait()
     }
 }

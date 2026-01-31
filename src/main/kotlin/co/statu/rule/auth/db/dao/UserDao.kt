@@ -4,78 +4,79 @@ import co.statu.rule.auth.db.model.Permission
 import co.statu.rule.auth.db.model.User
 import co.statu.rule.database.Dao
 import io.vertx.jdbcclient.JDBCPool
+import io.vertx.sqlclient.Pool
 import java.util.*
 
 abstract class UserDao : Dao<User>(User::class) {
     abstract suspend fun add(
         user: User,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): UUID
 
     abstract suspend fun isEmailExists(
         email: String,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): Boolean
 
     abstract suspend fun isAdditionalFieldUnique(
         additionalField: String,
         value: String,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): Boolean
 
     abstract suspend fun getUserIdFromEmail(
         email: String,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): UUID?
 
     abstract suspend fun isActive(
         userId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): Boolean
 
     abstract suspend fun getByPermissionGroupId(
         permissionGroupId: UUID,
         limit: Long,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): List<User>
 
     abstract suspend fun getPermissionGroupNameById(
         userId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): String?
 
     abstract suspend fun getPermissionsById(
         userId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): List<Permission>
 
     abstract suspend fun updateLastActivityTime(
         userId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     )
 
     abstract suspend fun updateLastPanelActivityTime(
         userId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     )
 
     abstract suspend fun getById(
         userId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): User?
 
     abstract suspend fun updateLastLoginDate(
         userId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     )
 
     abstract suspend fun getEmailFromUserId(
         userId: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): String?
 
     abstract suspend fun update(
         user: User,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     )
 }

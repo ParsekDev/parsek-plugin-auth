@@ -5,6 +5,7 @@ import co.statu.rule.mail.Mail
 import co.statu.rule.token.provider.TokenProvider
 import io.vertx.core.json.JsonObject
 import io.vertx.jdbcclient.JDBCPool
+import io.vertx.sqlclient.Pool
 import java.util.*
 
 class DeletedAccountMail : Mail {
@@ -16,7 +17,7 @@ class DeletedAccountMail : Mail {
         userId: UUID,
         uiAddress: String,
         databaseManager: DatabaseManager,
-        jdbcPool: JDBCPool,
+        jdbcPool: Pool,
         tokenProvider: TokenProvider
     ): JsonObject {
         return JsonObject()

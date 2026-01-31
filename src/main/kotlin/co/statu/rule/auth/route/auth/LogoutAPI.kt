@@ -7,7 +7,7 @@ import co.statu.rule.auth.AuthConfig
 import co.statu.rule.auth.AuthPlugin
 import co.statu.rule.auth.provider.AuthProvider
 import io.vertx.ext.web.RoutingContext
-import io.vertx.json.schema.SchemaParser
+import io.vertx.json.schema.SchemaRepository
 
 @Endpoint
 class LogoutAPI(
@@ -23,7 +23,7 @@ class LogoutAPI(
 
     override val paths = listOf(Path("/auth/logout", RouteType.POST))
 
-    override fun getValidationHandler(schemaParser: SchemaParser) = null
+    override fun getValidationHandler(schemaRepository: SchemaRepository) = null
 
     override suspend fun handle(context: RoutingContext): Result {
         authProvider.logout(context)

@@ -2,19 +2,20 @@ package co.statu.rule.auth.db.migration
 
 import co.statu.rule.database.DatabaseMigration
 import io.vertx.jdbcclient.JDBCPool
-import io.vertx.kotlin.coroutines.await
+import io.vertx.sqlclient.Pool
+import io.vertx.kotlin.coroutines.*
 
 class DbMigration3To4(
     override val FROM_SCHEME_VERSION: Int = 3,
     override val SCHEME_VERSION: Int = 4,
     override val SCHEME_VERSION_INFO: String = "Create invitation code table"
 ) : DatabaseMigration() {
-    override val handlers: List<suspend (jdbcPool: JDBCPool, tablePrefix: String) -> Unit> = listOf(
+    override val handlers: List<suspend (jdbcPool: Pool, tablePrefix: String) -> Unit> = listOf(
         createInvitationCodeTable()
     )
 
-    private fun createInvitationCodeTable(): suspend (jdbcPool: JDBCPool, tablePrefix: String) -> Unit =
-        { jdbcPool: JDBCPool, tablePrefix: String ->
+    private fun createInvitationCodeTable(): suspend (jdbcPool: Pool, tablePrefix: String) -> Unit =
+        { jdbcPool: Pool, tablePrefix: String ->
             jdbcPool
                 .query(
                     """
@@ -30,6 +31,6 @@ class DbMigration3To4(
                 """.trimIndent()
                 )
                 .execute()
-                .await()
+                .coAwait()
         }
 }

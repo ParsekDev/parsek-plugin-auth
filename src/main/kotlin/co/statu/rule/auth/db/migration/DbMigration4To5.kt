@@ -3,8 +3,9 @@ package co.statu.rule.auth.db.migration
 import co.statu.rule.database.DatabaseMigration
 import io.vertx.core.json.JsonObject
 import io.vertx.jdbcclient.JDBCPool
-import io.vertx.kotlin.coroutines.await
-import io.vertx.kotlin.coroutines.coAwait
+import io.vertx.sqlclient.Pool
+import io.vertx.kotlin.coroutines.*
+import io.vertx.kotlin.coroutines.*
 import io.vertx.sqlclient.Tuple
 
 class DbMigration4To5(
@@ -12,7 +13,7 @@ class DbMigration4To5(
     override val SCHEME_VERSION: Int = 5,
     override val SCHEME_VERSION_INFO: String = "Remove name, surname, fullName and lang columns and add additionalFields column to user table"
 ) : DatabaseMigration() {
-    override val handlers: List<suspend (jdbcPool: JDBCPool, tablePrefix: String) -> Unit> = listOf(
+    override val handlers: List<suspend (jdbcPool: Pool, tablePrefix: String) -> Unit> = listOf(
         addAdditionalFieldsColumnToUserTable(),
         migrateFieldsToAdditionalFieldsColumn(),
         dropNameColumn(),
@@ -21,17 +22,17 @@ class DbMigration4To5(
         dropLangColumn()
     )
 
-    private fun addAdditionalFieldsColumnToUserTable(): suspend (jdbcPool: JDBCPool, tablePrefix: String) -> Unit =
-        { jdbcPool: JDBCPool, tablePrefix: String ->
+    private fun addAdditionalFieldsColumnToUserTable(): suspend (jdbcPool: Pool, tablePrefix: String) -> Unit =
+        { jdbcPool: Pool, tablePrefix: String ->
             jdbcPool
                 .query("ALTER TABLE `${tablePrefix}user` ADD COLUMN `additionalFields` String DEFAULT '{}';")
                 .execute()
-                .await()
+                .coAwait()
         }
 
-    private fun migrateFieldsToAdditionalFieldsColumn(): suspend (jdbcPool: JDBCPool, tablePrefix: String) -> Unit =
-        { jdbcPool: JDBCPool, tablePrefix: String ->
-            val users = jdbcPool.query("SELECT * FROM `${tablePrefix}user`").execute().await()
+    private fun migrateFieldsToAdditionalFieldsColumn(): suspend (jdbcPool: Pool, tablePrefix: String) -> Unit =
+        { jdbcPool: Pool, tablePrefix: String ->
+            val users = jdbcPool.query("SELECT * FROM `${tablePrefix}user`").execute().coAwait()
 
             users.forEach { user ->
                 val additionalFields = JsonObject()
@@ -47,35 +48,35 @@ class DbMigration4To5(
             }
         }
 
-    private fun dropNameColumn(): suspend (jdbcPool: JDBCPool, tablePrefix: String) -> Unit =
-        { jdbcPool: JDBCPool, tablePrefix: String ->
+    private fun dropNameColumn(): suspend (jdbcPool: Pool, tablePrefix: String) -> Unit =
+        { jdbcPool: Pool, tablePrefix: String ->
             jdbcPool
                 .query("ALTER TABLE `${tablePrefix}user` DROP COLUMN `name`;")
                 .execute()
-                .await()
+                .coAwait()
         }
 
-    private fun dropSurnameColumn(): suspend (jdbcPool: JDBCPool, tablePrefix: String) -> Unit =
-        { jdbcPool: JDBCPool, tablePrefix: String ->
+    private fun dropSurnameColumn(): suspend (jdbcPool: Pool, tablePrefix: String) -> Unit =
+        { jdbcPool: Pool, tablePrefix: String ->
             jdbcPool
                 .query("ALTER TABLE `${tablePrefix}user` DROP COLUMN `surname`;")
                 .execute()
-                .await()
+                .coAwait()
         }
 
-    private fun dropFullNameColumn(): suspend (jdbcPool: JDBCPool, tablePrefix: String) -> Unit =
-        { jdbcPool: JDBCPool, tablePrefix: String ->
+    private fun dropFullNameColumn(): suspend (jdbcPool: Pool, tablePrefix: String) -> Unit =
+        { jdbcPool: Pool, tablePrefix: String ->
             jdbcPool
                 .query("ALTER TABLE `${tablePrefix}user` DROP COLUMN `fullName`;")
                 .execute()
-                .await()
+                .coAwait()
         }
 
-    private fun dropLangColumn(): suspend (jdbcPool: JDBCPool, tablePrefix: String) -> Unit =
-        { jdbcPool: JDBCPool, tablePrefix: String ->
+    private fun dropLangColumn(): suspend (jdbcPool: Pool, tablePrefix: String) -> Unit =
+        { jdbcPool: Pool, tablePrefix: String ->
             jdbcPool
                 .query("ALTER TABLE `${tablePrefix}user` DROP COLUMN `lang`;")
                 .execute()
-                .await()
+                .coAwait()
         }
 }

@@ -4,14 +4,15 @@ import co.statu.parsek.api.ParsekPlugin
 import co.statu.rule.auth.db.dao.PermissionDao
 import co.statu.rule.auth.db.model.Permission
 import io.vertx.jdbcclient.JDBCPool
-import io.vertx.kotlin.coroutines.await
+import io.vertx.sqlclient.Pool
+import io.vertx.kotlin.coroutines.*
 import io.vertx.sqlclient.Row
 import io.vertx.sqlclient.RowSet
 import io.vertx.sqlclient.Tuple
 import java.util.*
 
 class PermissionDaoImpl : PermissionDao() {
-    override suspend fun init(jdbcPool: JDBCPool, plugin: ParsekPlugin) {
+    override suspend fun init(jdbcPool: Pool, plugin: ParsekPlugin) {
         jdbcPool
             .query(
                 """
@@ -22,7 +23,7 @@ class PermissionDaoImpl : PermissionDao() {
                         """
             )
             .execute()
-            .await()
+            .coAwait()
 
         val permissions = listOf(
             Permission(name = "access_panel"),
@@ -33,7 +34,7 @@ class PermissionDaoImpl : PermissionDao() {
 
     override suspend fun isTherePermission(
         permission: Permission,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): Boolean {
         val query =
             "SELECT COUNT(`name`) FROM `${getTablePrefix() + tableName}` where `name` = ?"
@@ -44,14 +45,14 @@ class PermissionDaoImpl : PermissionDao() {
                 Tuple.of(
                     permission.name
                 )
-            ).await()
+            ).coAwait()
 
         return rows.toList()[0].getLong(0) != 0L
     }
 
     override suspend fun isTherePermissionById(
         id: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): Boolean {
         val query =
             "SELECT COUNT(`id`) FROM `${getTablePrefix() + tableName}` where `id` = ?"
@@ -62,14 +63,14 @@ class PermissionDaoImpl : PermissionDao() {
                 Tuple.of(
                     id
                 )
-            ).await()
+            ).coAwait()
 
         return rows.toList()[0].getLong(0) != 0L
     }
 
     override suspend fun add(
         permission: Permission,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ) {
         val query = "INSERT INTO `${getTablePrefix() + tableName}` (`id`, `name`) VALUES (?, ?)"
 
@@ -80,12 +81,12 @@ class PermissionDaoImpl : PermissionDao() {
                     permission.id,
                     permission.name
                 )
-            ).await()
+            ).coAwait()
     }
 
     override suspend fun getPermissionId(
         permission: Permission,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): UUID {
         val query =
             "SELECT id FROM `${getTablePrefix() + tableName}` where `name` = ?"
@@ -96,14 +97,14 @@ class PermissionDaoImpl : PermissionDao() {
                 Tuple.of(
                     permission.name
                 )
-            ).await()
+            ).coAwait()
 
         return rows.toList()[0].getUUID(0)
     }
 
     override suspend fun getPermissionById(
         id: UUID,
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): Permission? {
         val query =
             "SELECT `id`, `name` FROM `${getTablePrefix() + tableName}` where `id` = ?"
@@ -114,7 +115,7 @@ class PermissionDaoImpl : PermissionDao() {
                 Tuple.of(
                     id
                 )
-            ).await()
+            ).coAwait()
 
         if (rows.size() == 0) {
             return null
@@ -126,7 +127,7 @@ class PermissionDaoImpl : PermissionDao() {
     }
 
     override suspend fun getPermissions(
-        jdbcPool: JDBCPool
+        jdbcPool: Pool
     ): List<Permission> {
         val query =
             "SELECT `id`, `name` FROM `${getTablePrefix() + tableName}`"
@@ -134,7 +135,7 @@ class PermissionDaoImpl : PermissionDao() {
         val rows: RowSet<Row> = jdbcPool
             .preparedQuery(query)
             .execute()
-            .await()
+            .coAwait()
 
         return rows.toEntities()
     }

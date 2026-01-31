@@ -22,7 +22,7 @@ import io.vertx.ext.web.validation.RequestPredicate
 import io.vertx.ext.web.validation.ValidationHandler
 import io.vertx.ext.web.validation.builder.Bodies.json
 import io.vertx.ext.web.validation.builder.ValidationHandlerBuilder
-import io.vertx.json.schema.SchemaParser
+import io.vertx.json.schema.SchemaRepository
 import io.vertx.json.schema.common.dsl.Schemas.objectSchema
 import io.vertx.json.schema.common.dsl.Schemas.stringSchema
 import org.apache.commons.validator.routines.EmailValidator
@@ -54,8 +54,8 @@ class UpdateProfileAPI(
         authPlugin.pluginBeanContext.getBean(MailManager::class.java)
     }
 
-    override fun getValidationHandler(schemaParser: SchemaParser): ValidationHandler =
-        ValidationHandlerBuilder.create(schemaParser)
+    override fun getValidationHandler(schemaRepository: SchemaRepository): ValidationHandler =
+        ValidationHandlerBuilder.create(schemaRepository)
             .body(
                 json(
                     objectSchema()
