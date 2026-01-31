@@ -1,13 +1,13 @@
 package co.statu.rule.auth.db.migration
 
+import co.statu.parsek.annotation.Migration
 import co.statu.rule.database.DatabaseMigration
 import io.vertx.core.json.JsonObject
-import io.vertx.jdbcclient.JDBCPool
+import io.vertx.kotlin.coroutines.coAwait
 import io.vertx.sqlclient.Pool
-import io.vertx.kotlin.coroutines.*
-import io.vertx.kotlin.coroutines.*
 import io.vertx.sqlclient.Tuple
 
+@Migration
 class DbMigration4To5(
     override val FROM_SCHEME_VERSION: Int = 4,
     override val SCHEME_VERSION: Int = 5,

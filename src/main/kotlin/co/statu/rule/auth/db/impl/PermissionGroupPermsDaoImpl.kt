@@ -3,14 +3,20 @@ package co.statu.rule.auth.db.impl
 import co.statu.parsek.api.ParsekPlugin
 import co.statu.rule.auth.db.dao.PermissionGroupPermsDao
 import co.statu.rule.auth.db.model.PermissionGroupPerms
-import io.vertx.jdbcclient.JDBCPool
+import co.statu.rule.database.annotation.Dao
 import io.vertx.sqlclient.Pool
 import io.vertx.kotlin.coroutines.*
 import io.vertx.sqlclient.Row
 import io.vertx.sqlclient.RowSet
 import io.vertx.sqlclient.Tuple
+import org.springframework.beans.factory.config.ConfigurableBeanFactory
+import org.springframework.context.annotation.Lazy
+import org.springframework.context.annotation.Scope
 import java.util.*
 
+@Dao
+@Lazy
+@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 class PermissionGroupPermsDaoImpl : PermissionGroupPermsDao() {
     override suspend fun init(jdbcPool: Pool, plugin: ParsekPlugin) {
         jdbcPool
