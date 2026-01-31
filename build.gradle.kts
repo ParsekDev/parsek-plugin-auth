@@ -35,7 +35,7 @@ dependencies {
         compileOnly(project(mapOf("path" to ":plugins:parsek-plugin-system-property")))
     } else {
         compileOnly("dev.parsek:core:1.0.0-beta.19")
-        compileOnly("dev.parsek:parsek-plugin-database:1.0.0-dev.3")
+        compileOnly("dev.parsek:parsek-plugin-database:1.0.0-dev.5")
         compileOnly("dev.parsek:parsek-plugin-token:1.0.0-dev.6")
         compileOnly("dev.parsek:parsek-plugin-mail:1.0.0-dev.4")
         compileOnly("dev.parsek:parsek-plugin-system-property:1.0.0-dev.3")
