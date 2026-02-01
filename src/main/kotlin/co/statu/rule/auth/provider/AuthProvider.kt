@@ -213,7 +213,7 @@ class AuthProvider private constructor(
 
         routingContext?.let {
             val request = it.request()
-            val ip = request.getHeader("X-Forwarded-For") ?: request.remoteAddress()?.hostAddress() ?: "-"
+            val ip = getRemoteIP(it)
             val userAgent = request.getHeader("User-Agent") ?: "-"
             additionalClaims.put("ip", ip)
             additionalClaims.put("userAgent", userAgent)
@@ -538,5 +538,12 @@ class AuthProvider private constructor(
         user.additionalFields = JsonObject()
 
         userDao.update(user, jdbcPool)
+    }
+    fun getRemoteIP(routingContext: RoutingContext): String {
+        val request = routingContext.request()
+        return request.getHeader("X-Forwarded-For")?.split(",")?.first()?.trim()
+            ?: request.getHeader("X-Real-IP")
+            ?: request.remoteAddress()?.host()
+            ?: "-"
     }
 }

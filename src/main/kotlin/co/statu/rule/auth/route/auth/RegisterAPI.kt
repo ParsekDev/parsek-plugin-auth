@@ -64,7 +64,7 @@ class RegisterAPI(
 
         authProvider.validateRecaptcha(recaptcha)
 
-        val remoteIP = context.request().remoteAddress().host()
+        val remoteIP = authProvider.getRemoteIP(context)
 
         val jdbcPool = databaseManager.getConnectionPool()
 
