@@ -182,15 +182,51 @@ class AuthProvider private constructor(
     }
 
     suspend fun login(
-        email: String, jdbcPool: Pool
+        email: String,
+        routingContext: RoutingContext? = null,
+        jdbcPool: Pool
     ): Pair<String, String> {
         val userId = userDao.getUserIdFromEmail(
             email, jdbcPool
         )!!
 
+        val config = pluginConfigManager.config
+        val loginConfig = config.loginConfig
+
+        if (loginConfig.singleSession) {
+            tokenProvider.invalidateTokensBySubjectAndType(userId.toString(), authenticationToken, jdbcPool)
+        } else {
+            val sessions = tokenProvider.getAllBySubjectAndType(userId.toString(), authenticationToken, jdbcPool)
+            val maxSessions = loginConfig.maxSessions
+
+            if (sessions.size >= maxSessions) {
+                val sessionsToDelete = sessions.drop(maxSessions - 1)
+                sessionsToDelete.forEach {
+                    tokenProvider.invalidateByTokenId(it.id, jdbcPool)
+                }
+            }
+        }
+
         val (token, expireDate) = tokenProvider.generateToken(userId.toString(), authenticationToken)
 
-        tokenProvider.saveToken(token, userId.toString(), authenticationToken, expireDate, jdbcPool = jdbcPool)
+        val additionalClaims = JsonObject()
+
+        routingContext?.let {
+            val request = it.request()
+            val ip = request.getHeader("X-Forwarded-For") ?: request.remoteAddress()?.hostAddress() ?: "-"
+            val userAgent = request.getHeader("User-Agent") ?: "-"
+            additionalClaims.put("ip", ip)
+            additionalClaims.put("userAgent", userAgent)
+        }
+
+        tokenProvider.saveToken(
+            token,
+            userId.toString(),
+            authenticationToken,
+            expireDate,
+            additionalClaims,
+            jdbcPool = jdbcPool
+        )
 
         val csrfToken = CsrfTokenGenerator.nextToken()
 

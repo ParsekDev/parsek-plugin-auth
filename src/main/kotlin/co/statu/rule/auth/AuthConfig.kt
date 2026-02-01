@@ -64,7 +64,8 @@ class AuthConfig(
         }
 
         data class LoginConfig(
-            val singleSession: Boolean = false
+            val singleSession: Boolean = false,
+            val maxSessions: Int = 5
         )
     }
 }

@@ -153,7 +153,7 @@ class VerifyMagicLinkAPI(
 
         authProvider.authenticate(email)
 
-        val (authToken, csrfToken) = authProvider.login(email, jdbcPool)
+        val (authToken, csrfToken) = authProvider.login(email, context, jdbcPool)
 
         userDao.updateLastLoginDate(userId, jdbcPool)
 
@@ -218,11 +218,7 @@ class VerifyMagicLinkAPI(
 
         authProvider.authenticate(email)
 
-        if (pluginConfigManager.config.loginConfig.singleSession) {
-            tokenProvider.invalidateTokensBySubjectAndType(userId.toString(), authenticationToken, jdbcPool)
-        }
-
-        val (authToken, csrfToken) = authProvider.login(email, jdbcPool)
+        val (authToken, csrfToken) = authProvider.login(email, context, jdbcPool)
 
         userDao.updateLastLoginDate(userId, jdbcPool)
 

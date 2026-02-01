@@ -18,7 +18,6 @@ import io.vertx.ext.web.validation.builder.ValidationHandlerBuilder
 import io.vertx.json.schema.SchemaRepository
 import io.vertx.json.schema.common.dsl.Schemas.objectSchema
 import io.vertx.json.schema.common.dsl.Schemas.stringSchema
-import kotlin.collections.set
 
 @Endpoint
 class RegisterAPI(
@@ -94,7 +93,7 @@ class RegisterAPI(
 
         authProvider.authenticate(email)
 
-        val (authToken, csrfToken) = authProvider.login(email, jdbcPool)
+        val (authToken, csrfToken) = authProvider.login(email, context, jdbcPool)
 
         userDao.updateLastLoginDate(userId, jdbcPool)
 

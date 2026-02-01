@@ -44,7 +44,7 @@ dependencies {
     } else {
         compileOnly("dev.parsek:core:1.0.0-beta.19")
         compileOnly("dev.parsek:parsek-plugin-database:1.0.0-dev.5")
-        compileOnly("dev.parsek:parsek-plugin-token:1.0.0-dev.8")
+        compileOnly("dev.parsek:parsek-plugin-token:1.0.0-dev.9")
         compileOnly("dev.parsek:parsek-plugin-mail:1.0.0-dev.6")
         compileOnly("dev.parsek:parsek-plugin-system-property:1.0.0-dev.4")
     }
