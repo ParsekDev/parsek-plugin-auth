@@ -28,11 +28,19 @@ repositories {
 
 dependencies {
     if (bootstrap) {
-        compileOnly(project(mapOf("path" to ":Parsek")))
-        compileOnly(project(mapOf("path" to ":plugins:parsek-plugin-database")))
-        compileOnly(project(mapOf("path" to ":plugins:parsek-plugin-token")))
-        compileOnly(project(mapOf("path" to ":plugins:parsek-plugin-mail")))
-        compileOnly(project(mapOf("path" to ":plugins:parsek-plugin-system-property")))
+        listOf(
+            ":Parsek" to "Parsek*.jar",
+            ":plugins:parsek-plugin-database" to "parsek-plugin-database*.jar",
+            ":plugins:parsek-plugin-token" to "parsek-plugin-token*.jar",
+            ":plugins:parsek-plugin-mail" to "parsek-plugin-mail*.jar",
+            ":plugins:parsek-plugin-system-property" to "parsek-plugin-system-property*.jar"
+        ).forEach { (path, pattern) ->
+            if (findProject(path) != null) {
+                compileOnly(project(path))
+            } else {
+                compileOnly(fileTree(rootDir) { include(pattern) })
+            }
+        }
     } else {
         compileOnly("dev.parsek:core:1.0.0-beta.19")
         compileOnly("dev.parsek:parsek-plugin-database:1.0.0-dev.5")
